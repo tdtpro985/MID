@@ -1,0 +1,57 @@
+/* ═══════════════════════════════════════════════════════════
+   POWERSTEEL – variables.css
+   Design tokens: brand colors, dark/light theme variables
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --orange: #e67026;
+  --orange-dark: #e15716;
+  --gray: #717074;
+  --gray-light: #a6a6a8;
+  --gray-mid: #7d7d80;
+  --white: #fafafa;
+  --dark: #242423;
+  --darker: #121010;
+  --brown: #322721;
+  --bg: #0e0d0c;
+
+  /* Themeable tokens — dark mode defaults */
+  --bg-page: #0e0d0c;
+  --bg-landing: #121010;
+  --bg-card: rgba(36,36,35,0.7);
+  --bg-header: rgba(18,16,16,0.9);
+  --bg-table-head: rgba(18,16,16,0.8);
+  --bg-table-hover: rgba(230,112,38,0.06);
+  --bg-stats: #242423;
+  --text-primary: #fafafa;
+  --text-secondary: #a6a6a8;
+  --text-muted: #7d7d80;
+  --border-card: rgba(113,112,116,0.2);
+  --border-orange: rgba(230,112,38,0.2);
+  --border-orange-hover: rgba(230,112,38,0.4);
+  --upload-bg: rgba(36,36,35,0.6);
+  --upload-hover: rgba(230,112,38,0.08);
+  --loading-bg: rgba(18,16,16,0.95);
+  --scrollbar-track: #121010;
+}
+
+/* ─── LIGHT MODE ─────────────────────────────────────────── */
+body.light-mode {
+  --bg-page: #f2f1ef;
+  --bg-landing: #e8e6e2;
+  --bg-card: rgba(255,255,255,0.85);
+  --bg-header: rgba(242,241,239,0.95);
+  --bg-table-head: rgba(230,228,224,0.95);
+  --bg-table-hover: rgba(230,112,38,0.06);
+  --bg-stats: #dedad4;
+  --text-primary: #1a1917;
+  --text-secondary: #5a5856;
+  --text-muted: #7d7d80;
+  --border-card: rgba(113,112,116,0.15);
+  --border-orange: rgba(230,112,38,0.3);
+  --border-orange-hover: rgba(230,112,38,0.6);
+  --upload-bg: rgba(255,255,255,0.7);
+  --upload-hover: rgba(230,112,38,0.06);
+  --loading-bg: rgba(242,241,239,0.97);
+  --scrollbar-track: #dedad4;
+}

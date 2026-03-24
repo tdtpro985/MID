@@ -1,0 +1,276 @@
+/* ═══════════════════════════════════════════════════════════
+   POWERSTEEL – landing.css
+   Landing page: hero, parallax, upload zone, scroll cue
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── LANDING SECTION ────────────────────────────────────── */
+#landing {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--bg-landing);
+  transition: background 0.4s ease;
+}
+
+/* ─── BACKGROUND EFFECTS ─────────────────────────────────── */
+.parallax-bg {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 50%, rgba(230,112,38,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 30%, rgba(113,112,116,0.12) 0%, transparent 60%),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 80px,
+      rgba(230,112,38,0.03) 80px,
+      rgba(230,112,38,0.03) 82px
+    );
+  will-change: transform;
+  transition: transform 0.1s linear;
+}
+
+.steel-texture {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    92deg,
+    transparent,
+    transparent 3px,
+    rgba(250,250,250,0.015) 3px,
+    rgba(250,250,250,0.015) 4px
+  );
+  pointer-events: none;
+}
+
+.grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(230,112,38,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(230,112,38,0.06) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  animation: gridPulse 8s ease-in-out infinite;
+}
+
+@keyframes gridPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.floating-bars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bar {
+  position: absolute;
+  background: linear-gradient(180deg, var(--orange), transparent);
+  opacity: 0.15;
+  border-radius: 2px;
+  animation: barFloat linear infinite;
+}
+
+@keyframes barFloat {
+  from { transform: translateY(110vh); opacity: 0; }
+  10% { opacity: 0.15; }
+  90% { opacity: 0.15; }
+  to { transform: translateY(-20vh); opacity: 0; }
+}
+
+/* ─── HERO CONTENT ───────────────────────────────────────── */
+.hero-content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.brand-tag {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.4em;
+  color: var(--orange);
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards 0.3s;
+}
+
+/* ─── LOGO ───────────────────────────────────────────────── */
+.hero-logo-img {
+  margin-bottom: 2.5rem;
+  opacity: 0;
+  animation: fadeUp 1s ease forwards 0.5s;
+}
+
+.hero-logo-img img {
+  width: clamp(280px, 55vw, 620px);
+  height: auto;
+}
+
+.hero-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 10vw, 8rem);
+  line-height: 0.9;
+  margin-bottom: 1rem;
+  opacity: 0;
+  animation: fadeUp 1s ease forwards 0.5s;
+}
+
+.hero-logo .tdt { color: var(--gray-light); }
+.hero-logo .power { color: var(--orange); }
+.hero-logo .steel { color: var(--text-primary); letter-spacing: 0.05em; }
+
+.hero-sub {
+  font-family: 'Montserrat', sans-serif;
+  font-size: clamp(0.6rem, 1.5vw, 0.85rem);
+  letter-spacing: 0.6em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 3rem;
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards 0.7s;
+}
+
+.hero-headline {
+  font-family: 'Montserrat', sans-serif;
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  font-weight: 300;
+  color: var(--text-primary);
+  max-width: 600px;
+  margin: 0 auto 3rem;
+  line-height: 1.6;
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards 0.9s;
+}
+
+.hero-headline span { color: var(--orange); font-weight: 700; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── UPLOAD ZONE ────────────────────────────────────────── */
+.upload-zone {
+  position: relative;
+  z-index: 10;
+  width: min(520px, 90vw);
+  border: 2px dashed var(--border-orange);
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--upload-bg);
+  backdrop-filter: blur(12px);
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards 1.1s;
+  margin: 0 auto;
+}
+
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--orange);
+  background: var(--upload-hover);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px rgba(230,112,38,0.2);
+}
+
+.upload-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(230,112,38,0.15);
+  border: 2px solid rgba(230,112,38,0.3);
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(230,112,38,0.3); }
+  50% { box-shadow: 0 0 0 12px rgba(230,112,38,0); }
+}
+
+.upload-icon svg { width: 28px; height: 28px; fill: var(--orange); }
+
+.upload-zone h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.upload-zone p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.upload-btn {
+  display: inline-block;
+  background: var(--orange);
+  color: var(--white);
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.8rem 2rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.upload-btn:hover {
+  background: var(--orange-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(230,112,38,0.4);
+}
+
+#fileInput { display: none; }
+
+/* ─── SCROLL CUE ─────────────────────────────────────────── */
+.scroll-cue {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  opacity: 0;
+  animation: fadeUp 0.8s ease forwards 1.5s;
+}
+
+.scroll-cue span {
+  display: block;
+  width: 2px;
+  height: 40px;
+  background: linear-gradient(to bottom, var(--orange), transparent);
+  margin: 0 auto;
+  animation: scrollLine 2s ease-in-out infinite;
+}
+
+@keyframes scrollLine {
+  0% { transform: scaleY(0); transform-origin: top; }
+  50% { transform: scaleY(1); transform-origin: top; }
+  51% { transform: scaleY(1); transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}

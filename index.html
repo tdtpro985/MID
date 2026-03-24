@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TDT PowerSteel – Marketing Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;600;700;900&family=Raleway:wght@300;400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<!-- ─── Module: All styles ─── -->
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ─── Module: Landing page (hero + upload zone) ─── -->
+<!-- landing.html contents inlined below -->
+
+<!-- Dark/Light Mode Toggle (floating, landing only) -->
+<button class="mode-toggle" id="modeToggle" onclick="toggleMode()">
+  <span class="toggle-icon" id="toggleIcon">🌙</span>
+  <span class="toggle-label" id="toggleLabel">Light</span>
+</button>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-bars">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <div class="loading-text">Processing Data...</div>
+</div>
+
+<!-- ═══════════════════════════════ LANDING PAGE ═══════════════════════════════ -->
+<section id="landing">
+  <div class="parallax-bg" id="parallaxBg"></div>
+  <div class="steel-texture"></div>
+  <div class="grid-overlay"></div>
+  <div class="floating-bars" id="floatingBars"></div>
+
+  <div class="hero-content">
+    <div class="brand-tag">Marketing Intelligence Platform</div>
+
+    <!-- Logo: swap src to your image path if needed -->
+    <div class="hero-logo-img">
+      <img src="assets/logo.png" alt="POWERSTEEL" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <div class="hero-logo" style="display:none;">
+        <span class="power">POWER</span><span class="steel">STEEL</span>
+      </div>
+    </div>
+
+    <p class="hero-headline">
+      Transform your <span>sales data</span> into actionable insights.<br>
+      Upload your leads report to unlock your dashboard.
+    </p>
+
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
+        </svg>
+      </div>
+      <h3>Upload Leads Report</h3>
+      <p>Drag & drop your CSV file here, or click to browse</p>
+      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+        Select CSV File
+      </button>
+      <input type="file" id="fileInput" accept=".csv">
+    </div>
+  </div>
+
+  <!-- Recent Files trigger (landing) -->
+  <button class="history-trigger-btn" id="historyTriggerBtn" style="display:none;" onclick="openHistoryModal()">
+    <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7v4l5-5-5-5v4z"/></svg>
+    Recent Files
+    <span class="history-trigger-count" id="historyTriggerCount">0</span>
+  </button>
+
+  <div class="scroll-cue"><span></span></div>
+</section>
+
+<!-- ─── History Modal (landing) ─── -->
+<div class="history-modal-backdrop" id="historyModalBackdrop" onclick="closeHistoryModal()"></div>
+<div class="history-modal" id="historyModal">
+  <div class="history-modal-header">
+    <div class="history-modal-title">
+      <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7v4l5-5-5-5v4z"/></svg>
+      Recent Files
+    </div>
+    <div style="display:flex;align-items:center;gap:0.6rem;">
+      <button class="upload-history-clear-all" onclick="clearAllHistory()">Clear All</button>
+      <button class="history-modal-close" onclick="closeHistoryModal()">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="history-modal-list" id="uploadHistoryListLanding"></div>
+</div>
+
+<!-- ─── Module: Dashboard ─── -->
+<!-- dashboard.html contents inlined below -->
+
+<!-- ═══════════════════════════════ DASHBOARD ═══════════════════════════════ -->
+<section id="dashboard">
+
+  <div class="dash-header">
+    <div class="dash-logo-img">
+      <!-- Logo: swap src to your image path if needed -->
+      <img src="assets/logo.png" alt="POWERSTEEL" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <div class="dash-logo" style="display:none;">
+        <span class="p">POWER</span><span class="s">STEEL</span>
+      </div>
+    </div>
+    <div class="dash-meta" id="dashMeta">Marketing Leads Report</div>
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+      <button class="mode-toggle-inline" id="modeToggleInline" onclick="toggleMode()">
+        <span class="toggle-icon" id="toggleIconInline">🌙</span>
+        <span class="toggle-label" id="toggleLabelInline">Light</span>
+      </button>
+      <button class="present-btn" onclick="openPresentView()">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm2 5h12v2H6zm3 5h6v2H9z"/></svg>
+        Present
+      </button>
+      <button class="back-btn" onclick="backToLanding()">← Upload New</button>
+    </div>
+  </div>
+
+  <div class="stats-strip" id="statsStrip" style="display:none;">
+    <div class="stats-track" id="statsTrack"></div>
+  </div>
+
+  <div class="dash-body">
+
+    <div class="file-banner" id="fileBanner">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+      <div class="file-banner-text">
+        <h4 id="fileName">File loaded</h4>
+        <p id="fileDetails">Parsing complete</p>
+      </div>
+    </div>
+
+    <div class="section-title">Key Metrics <span class="tag" id="tagPeriod">—</span></div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <!-- ─── Module: Charts ─── -->
+    <div class="section-title">Lead Sources <span class="tag">Distribution</span></div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h4>Leads by Source</h4>
+        <canvas id="sourceBar"></canvas>
+      </div>
+      <div class="chart-card" id="donutCard">
+        <h4>Source Share</h4>
+        <!-- ─── Module: Donut Diagram ─── -->
+        <div id="donutChartWrap" class="donut-chart-wrap">
+          <div class="donut-svg-area">
+            <svg id="donutSvg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <filter id="donutGlow">
+                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                  <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <g id="donutSegments"></g>
+              <g id="donutCenter">
+                <circle cx="110" cy="110" r="44" fill="var(--bg-card)"/>
+                <text id="donutCenterVal"   x="110" y="104" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="26" fill="var(--orange)" class="donut-center-val">—</text>
+                <text id="donutCenterLabel" x="110" y="120" text-anchor="middle" font-family="'Montserrat',sans-serif" font-size="7" font-weight="700" letter-spacing="1.5" fill="var(--text-muted)" class="donut-center-label">TOTAL</text>
+                <text id="donutCenterSub"   x="110" y="132" text-anchor="middle" font-family="'Montserrat',sans-serif" font-size="6" fill="var(--text-muted)" class="donut-center-sub">LEADS</text>
+              </g>
+            </svg>
+          </div>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </div>
+      <div class="chart-card wide">
+        <h4>Converted Sales Value by Source (₱)</h4>
+        <canvas id="salesBar"></canvas>
+      </div>
+    </div>
+
+    <div class="section-title">Sales Reps <span class="tag">Performance</span></div>
+    <div class="charts-grid">
+      <div class="chart-card wide">
+        <h4>Leads per Sales Representative</h4>
+        <canvas id="repBar"></canvas>
+      </div>
+    </div>
+
+    <div class="section-title">Source Breakdown <span class="tag">Detail</span></div>
+    <div class="source-grid" id="sourceGrid"></div>
+
+    <div class="section-title">Rep Data <span class="tag">Table</span></div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h4 id="repTableTitle">Sales Representatives</h4>
+        <div style="font-family:Montserrat;font-size:0.72rem;color:var(--text-secondary);" id="tableCount"></div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Rep Name</th>
+              <th>Leads Count</th>
+              <th>Contribution %</th>
+            </tr>
+          </thead>
+          <tbody id="repTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /.dash-body -->
+
+  <!-- Upload History Drawer (dashboard) -->
+  <div class="history-drawer" id="historyDrawer">
+    <button class="history-drawer-tab" id="historyDrawerTab" onclick="toggleHistoryDrawer()">
+      <svg class="history-drawer-tab-icon" viewBox="0 0 24 24"><path d="M13 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7v4l5-5-5-5v4z"/></svg>
+      <span>Upload History</span>
+      <span class="history-drawer-count" id="historyDrawerCount">0</span>
+      <svg class="history-drawer-chevron" id="historyDrawerChevron" viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+    </button>
+    <div class="history-drawer-body" id="historyDrawerBody">
+      <div class="history-drawer-inner">
+        <div class="history-drawer-toolbar">
+          <span class="upload-history-title">Recent Files</span>
+          <button class="upload-history-clear-all" onclick="clearAllHistory()">Clear All</button>
+        </div>
+        <div class="history-drawer-list" id="uploadHistoryListDash"></div>
+        <div class="upload-history-empty" id="uploadHistoryDashEmpty" style="display:none;">No previous uploads yet.</div>
+      </div>
+    </div>
+  </div>
+
+</section><!-- /#dashboard -->
+
+<!-- ─── Error Toast ─── -->
+<div id="errorToast" class="error-toast" role="alert" aria-live="assertive">
+  <div class="error-toast-icon">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+  </div>
+  <div class="error-toast-body">
+    <div class="error-toast-title" id="errorToastTitle">Invalid File</div>
+    <div class="error-toast-msg"   id="errorToastMsg">Please upload a CSV file.</div>
+  </div>
+  <button class="error-toast-close" onclick="hideError()" aria-label="Dismiss">✕</button>
+</div>
+
+<style>
+/* ─── ERROR TOAST ─────────────────────────────────────────── */
+.error-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: var(--bg-card);
+  border: 1px solid rgba(220, 60, 60, 0.5);
+  border-left: 4px solid #dc3c3c;
+  border-radius: 12px;
+  padding: 0.9rem 1.2rem;
+  min-width: 300px;
+  max-width: min(480px, 90vw);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  backdrop-filter: blur(16px);
+  transition: transform 0.35s cubic-bezier(0.34,1.4,0.64,1), opacity 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.error-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.error-toast-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: #dc3c3c;
+  flex-shrink: 0;
+}
+
+.error-toast-body {
+  flex: 1;
+}
+
+.error-toast-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #dc3c3c;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.15rem;
+}
+
+.error-toast-msg {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.error-toast-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.2rem 0.3rem;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+  flex-shrink: 0;
+}
+
+.error-toast-close:hover {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.08);
+}
+
+/* Shake animation on upload zone error */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-8px); }
+  40%       { transform: translateX(8px); }
+  60%       { transform: translateX(-5px); }
+  80%       { transform: translateX(5px); }
+}
+
+.upload-zone.error {
+  border-color: #dc3c3c;
+  box-shadow: 0 0 0 3px rgba(220,60,60,0.15);
+  animation: shake 0.4s ease;
+}
+
+</style>
+
+
+<script src="js/charts.js"></script>
+
+<!-- ─── Module: Present Mode ─── -->
+<!-- Present view panel injected via JS (js/present-mode.js) -->
+<script src="js/present-mode.js"></script>
+
+<!-- ─── Module: Dashboard core logic ─── -->
+<script src="js/dashboard.js"></script>
+
+</body>
+</html>

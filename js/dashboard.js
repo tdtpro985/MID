@@ -558,15 +558,18 @@ function buildLeadsDashboard(rows, fileName, rawRows) {
   // Hide leads dashboard, show leads dashboard
   document.getElementById('dashboard').classList.remove('visible');
   // Parse rep data (rows 3+, col 1=rep, col 2=count)
-  const reps = [];
+  // Merge duplicate rep names by summing counts — prevents multiple bars per
+  // rep when the source CSV lists the same name across multiple rows.
+  const repMap = new Map();
   for (let i = 3; i < rows.length; i++) {
     const r     = rows[i];
     const name  = r[1] ? r[1].trim() : '';
     const count = r[2] ? parseInt(r[2]) : 0;
     if (name && name !== 'Grand Total' && !isNaN(count) && count > 0) {
-      reps.push({ name, count });
+      repMap.set(name, (repMap.get(name) || 0) + count);
     }
   }
+  const reps = Array.from(repMap, ([name, count]) => ({ name, count }));
 
   // Parse source data
   const sources = [];

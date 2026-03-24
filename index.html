@@ -8,13 +8,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
-<!-- ─── Module: All styles ─── -->
-<link rel="stylesheet" href="css/styles.css">
+<!-- ─── Styles (split by concern) ─── -->
+<link rel="stylesheet" href="css/variables.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/landing.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/charts.css">
+<link rel="stylesheet" href="css/present-mode.css">
+<link rel="stylesheet" href="css/history.css">
+<link rel="stylesheet" href="css/toast.css">
+<link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
-
-<!-- ─── Module: Landing page (hero + upload zone) ─── -->
-<!-- landing.html contents inlined below -->
 
 <!-- Dark/Light Mode Toggle (floating, landing only) -->
 <button class="mode-toggle" id="modeToggle" onclick="toggleMode()">
@@ -40,7 +45,6 @@
   <div class="hero-content">
     <div class="brand-tag">Marketing Intelligence Platform</div>
 
-    <!-- Logo: swap src to your image path if needed -->
     <div class="hero-logo-img">
       <img src="assets/logo.png" alt="POWERSTEEL" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
       <div class="hero-logo" style="display:none;">
@@ -96,15 +100,11 @@
   <div class="history-modal-list" id="uploadHistoryListLanding"></div>
 </div>
 
-<!-- ─── Module: Dashboard ─── -->
-<!-- dashboard.html contents inlined below -->
-
 <!-- ═══════════════════════════════ DASHBOARD ═══════════════════════════════ -->
 <section id="dashboard">
 
   <div class="dash-header">
     <div class="dash-logo-img">
-      <!-- Logo: swap src to your image path if needed -->
       <img src="assets/logo.png" alt="POWERSTEEL" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
       <div class="dash-logo" style="display:none;">
         <span class="p">POWER</span><span class="s">STEEL</span>
@@ -141,7 +141,6 @@
     <div class="section-title">Key Metrics <span class="tag" id="tagPeriod">—</span></div>
     <div class="kpi-grid" id="kpiGrid"></div>
 
-    <!-- ─── Module: Charts ─── -->
     <div class="section-title">Lead Sources <span class="tag">Distribution</span></div>
     <div class="charts-grid">
       <div class="chart-card">
@@ -150,7 +149,6 @@
       </div>
       <div class="chart-card" id="donutCard">
         <h4>Source Share</h4>
-        <!-- ─── Module: Donut Diagram ─── -->
         <div id="donutChartWrap" class="donut-chart-wrap">
           <div class="donut-svg-area">
             <svg id="donutSvg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
@@ -246,106 +244,9 @@
   <button class="error-toast-close" onclick="hideError()" aria-label="Dismiss">✕</button>
 </div>
 
-<style>
-/* ─── ERROR TOAST ─────────────────────────────────────────── */
-.error-toast {
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%) translateY(120%);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  background: var(--bg-card);
-  border: 1px solid rgba(220, 60, 60, 0.5);
-  border-left: 4px solid #dc3c3c;
-  border-radius: 12px;
-  padding: 0.9rem 1.2rem;
-  min-width: 300px;
-  max-width: min(480px, 90vw);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-  backdrop-filter: blur(16px);
-  transition: transform 0.35s cubic-bezier(0.34,1.4,0.64,1), opacity 0.3s ease;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.error-toast.show {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.error-toast-icon svg {
-  width: 22px;
-  height: 22px;
-  fill: #dc3c3c;
-  flex-shrink: 0;
-}
-
-.error-toast-body {
-  flex: 1;
-}
-
-.error-toast-title {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #dc3c3c;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.15rem;
-}
-
-.error-toast-msg {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
-
-.error-toast-close {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  cursor: pointer;
-  padding: 0.2rem 0.3rem;
-  border-radius: 4px;
-  transition: color 0.2s, background 0.2s;
-  flex-shrink: 0;
-}
-
-.error-toast-close:hover {
-  color: var(--text-primary);
-  background: rgba(255,255,255,0.08);
-}
-
-/* Shake animation on upload zone error */
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%       { transform: translateX(-8px); }
-  40%       { transform: translateX(8px); }
-  60%       { transform: translateX(-5px); }
-  80%       { transform: translateX(5px); }
-}
-
-.upload-zone.error {
-  border-color: #dc3c3c;
-  box-shadow: 0 0 0 3px rgba(220,60,60,0.15);
-  animation: shake 0.4s ease;
-}
-
-</style>
-
-
+<!-- ─── Scripts ─── -->
 <script src="js/charts.js"></script>
-
-<!-- ─── Module: Present Mode ─── -->
-<!-- Present view panel injected via JS (js/present-mode.js) -->
 <script src="js/present-mode.js"></script>
-
-<!-- ─── Module: Dashboard core logic ─── -->
 <script src="js/dashboard.js"></script>
 
 </body>

@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════════════════════
    POWERSTEEL – dashboard.js
    Core logic: dark/light mode, parallax, floating bars,
-   drag-and-drop upload, CSV parsing, buildDashboard,
-   source cards, rep table, navigation
+   drag-and-drop upload, CSV parsing, multi-month support,
+   buildDashboard, source cards, rep table, navigation
    ═══════════════════════════════════════════════════════════ */
 
 // ─── DARK / LIGHT MODE TOGGLE ─────────────────────────────────
@@ -11,10 +11,8 @@ let isLight = false;
 function toggleMode() {
   isLight = !isLight;
   document.body.classList.toggle('light-mode', isLight);
-
   const icon  = isLight ? '☀️' : '🌙';
   const label = isLight ? 'Dark' : 'Light';
-
   document.getElementById('toggleIcon').textContent        = icon;
   document.getElementById('toggleLabel').textContent       = label;
   document.getElementById('toggleIconInline').textContent  = icon;
@@ -23,8 +21,6 @@ function toggleMode() {
   const gridColor = isLight ? 'rgba(90,88,86,0.15)' : 'rgba(113,112,116,0.15)';
   const tickColor = isLight ? '#5a5856' : '#a6a6a8';
   refreshChartColors(charts, tickColor, gridColor);
-
-  // Re-render SVG donut so its text/center colors pick up the new CSS variables
   if (window._pvData && window._pvData.sources && window._pvData.sources.length) {
     buildDonutChart(window._pvData.sources);
   }
@@ -35,7 +31,6 @@ function setDashboardMode(active) {
 }
 
 // ─── PARALLAX ─────────────────────────────────────────────────
-// Track both axes separately so mousemove and scroll don't overwrite each other
 let _parallaxMouse = { x: 0, y: 0 };
 let _parallaxScroll = 0;
 
@@ -79,13 +74,8 @@ function showError(title, msg) {
   document.getElementById('errorToastTitle').textContent = title;
   document.getElementById('errorToastMsg').textContent   = msg;
   toast.classList.add('show');
-
-  // Shake the upload zone
   const zone = document.getElementById('uploadZone');
-  zone.classList.add('error');
-  setTimeout(() => zone.classList.remove('error'), 500);
-
-  // Auto-dismiss after 5s
+  if (zone) { zone.classList.add('error'); setTimeout(() => zone.classList.remove('error'), 500); }
   clearTimeout(errorTimer);
   errorTimer = setTimeout(hideError, 5000);
 }
@@ -99,48 +89,14 @@ function hideError() {
 const MAX_FILE_SIZE_MB = 10;
 
 function validateFile(file) {
-  if (!file) {
-    showError('No File Selected', 'Please select a file to upload.');
-    return false;
-  }
-
-  // Check extension
+  if (!file) { showError('No File Selected', 'Please select a file to upload.'); return false; }
   const ext = file.name.split('.').pop().toLowerCase();
-  if (ext !== 'csv') {
-    showError(
-      'Wrong File Type',
-      `"${file.name}" is not a CSV file. Please upload a .csv file only.`
-    );
-    return false;
-  }
-
-  // Check MIME type (extra safety — some browsers spoof extensions)
+  if (ext !== 'csv') { showError('Wrong File Type', `"${file.name}" is not a CSV file.`); return false; }
   const allowedMime = ['text/csv', 'application/csv', 'text/plain', 'application/vnd.ms-excel'];
-  // Allow blank MIME only on non-Windows where OS may not report CSV MIME correctly
-  if (file.type && !allowedMime.includes(file.type)) {
-    showError(
-      'Invalid File Type',
-      `Detected type "${file.type}" is not accepted. Please upload a plain CSV file.`
-    );
-    return false;
-  }
-
-  // Check file size
+  if (file.type && !allowedMime.includes(file.type)) { showError('Invalid File Type', `Detected type "${file.type}" is not accepted.`); return false; }
   const sizeMB = file.size / (1024 * 1024);
-  if (sizeMB > MAX_FILE_SIZE_MB) {
-    showError(
-      'File Too Large',
-      `"${file.name}" is ${sizeMB.toFixed(1)} MB. Maximum allowed size is ${MAX_FILE_SIZE_MB} MB.`
-    );
-    return false;
-  }
-
-  // Check for empty file
-  if (file.size === 0) {
-    showError('Empty File', `"${file.name}" is empty. Please upload a valid CSV file.`);
-    return false;
-  }
-
+  if (sizeMB > MAX_FILE_SIZE_MB) { showError('File Too Large', `"${file.name}" is ${sizeMB.toFixed(1)} MB. Max is ${MAX_FILE_SIZE_MB} MB.`); return false; }
+  if (file.size === 0) { showError('Empty File', `"${file.name}" is empty.`); return false; }
   return true;
 }
 
@@ -158,12 +114,8 @@ zone.addEventListener('drop', e => {
 document.getElementById('fileInput').addEventListener('change', e => {
   const file = e.target.files[0];
   if (file) {
-    if (validateFile(file)) {
-      processFile(file);
-    } else {
-      // Reset input so the same file can be re-selected after fix
-      e.target.value = '';
-    }
+    if (validateFile(file)) { processFile(file); }
+    else { e.target.value = ''; }
   }
 });
 
@@ -172,55 +124,35 @@ const HISTORY_KEY = 'powersteel_upload_history';
 const MAX_HISTORY = 8;
 
 function getHistory() {
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
-  catch { return []; }
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
 }
 
 function saveHistory(history) {
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  } catch (e) {
-    // Quota exceeded — trim oldest entry and retry once
-    try {
-      const trimmed = history.slice(0, Math.max(1, history.length - 1));
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
-    } catch (e2) {
-      console.warn('PowerSteel: localStorage quota exceeded, history not saved.');
-    }
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); }
+  catch (e) {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, Math.max(1, history.length - 1)))); }
+    catch (e2) { console.warn('PowerSteel: localStorage quota exceeded.'); }
   }
 }
 
 function addToHistory(fileName, parsedData) {
   const history = getHistory();
-  // Remove duplicate by name
   const filtered = history.filter(h => h.fileName !== fileName);
-  // Store only the processed summary rows needed to rebuild the dashboard,
-  // NOT the full raw CSV matrix — avoids localStorage quota exhaustion.
-  filtered.unshift({
-    fileName,
-    timestamp: Date.now(),
-    data: parsedData
-  });
+  filtered.unshift({ fileName, timestamp: Date.now(), data: parsedData });
   saveHistory(filtered.slice(0, MAX_HISTORY));
   renderHistory();
 }
 
-function clearAllHistory() {
-  localStorage.removeItem(HISTORY_KEY);
-  renderHistory();
-}
+function clearAllHistory() { localStorage.removeItem(HISTORY_KEY); renderHistory(); }
 
 function clearHistoryItem(fileName) {
-  const history = getHistory().filter(h => h.fileName !== fileName);
-  saveHistory(history);
+  saveHistory(getHistory().filter(h => h.fileName !== fileName));
   renderHistory();
 }
 
 function loadHistoryItem(fileName) {
-  const history = getHistory();
-  const item = history.find(h => h.fileName === fileName);
+  const item = getHistory().find(h => h.fileName === fileName);
   if (!item) return;
-  // Close drawer if open
   if (drawerOpen) {
     drawerOpen = false;
     document.getElementById('historyDrawerBody')?.classList.remove('open');
@@ -228,34 +160,26 @@ function loadHistoryItem(fileName) {
     document.getElementById('historyDrawer')?.classList.remove('drawer-open');
   }
   document.getElementById('loadingOverlay').classList.add('show');
-  setTimeout(() => {
-    buildDashboard(item.data, item.fileName);
-  }, 200);
+  setTimeout(() => { buildDashboard(item.data, item.fileName); }, 200);
 }
 
 function formatTimestamp(ts) {
-  const d = new Date(ts);
-  const now = new Date();
-  const diffMs = now - d;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHrs  = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-  if (diffMins < 1)   return 'Just now';
-  if (diffMins < 60)  return `${diffMins}m ago`;
-  if (diffHrs  < 24)  return `${diffHrs}h ago`;
-  if (diffDays < 7)   return `${diffDays}d ago`;
+  const d = new Date(ts), now = new Date();
+  const diffMins = Math.floor((now - d) / 60000);
+  const diffHrs  = Math.floor((now - d) / 3600000);
+  const diffDays = Math.floor((now - d) / 86400000);
+  if (diffMins < 1)  return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHrs  < 24) return `${diffHrs}h ago`;
+  if (diffDays < 7)  return `${diffDays}d ago`;
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function renderHistory() {
   const history = getHistory();
-
-  // Landing: trigger button + count badge
   const triggerBtn   = document.getElementById('historyTriggerBtn');
   const triggerCount = document.getElementById('historyTriggerCount');
-  // Landing modal list
   const landingList  = document.getElementById('uploadHistoryListLanding');
-  // Dashboard drawer
   const drawerCount  = document.getElementById('historyDrawerCount');
   const drawerList   = document.getElementById('uploadHistoryListDash');
   const drawerEmpty  = document.getElementById('uploadHistoryDashEmpty');
@@ -276,50 +200,33 @@ function renderHistory() {
     </div>
   `).join('');
 
-  // Landing trigger button
   if (triggerBtn) {
     triggerBtn.style.display = history.length ? 'flex' : 'none';
     if (triggerCount) triggerCount.textContent = history.length;
   }
-
-  // Landing modal list
   if (landingList) landingList.innerHTML = history.length ? makeItems('modal') : '<div class="upload-history-empty">No previous uploads yet.</div>';
-
-  // Dashboard drawer (leads)
   if (drawerEl) drawerEl.style.display = 'flex';
   if (drawerCount) drawerCount.textContent = history.length;
   if (drawerList)  drawerList.innerHTML = history.length ? makeItems('drawer') : '';
   if (drawerEmpty) drawerEmpty.style.display = history.length ? 'none' : 'block';
-
 }
 
-// ─── HISTORY MODAL (landing) ──────────────────────────────────
 function openHistoryModal() {
   document.getElementById('historyModal').classList.add('open');
   document.getElementById('historyModalBackdrop').classList.add('open');
 }
-
 function closeHistoryModal() {
   document.getElementById('historyModal').classList.remove('open');
   document.getElementById('historyModalBackdrop').classList.remove('open');
 }
+function loadHistoryItemFromModal(fileName) { closeHistoryModal(); loadHistoryItem(fileName); }
 
-function loadHistoryItemFromModal(fileName) {
-  closeHistoryModal();
-  loadHistoryItem(fileName);
-}
-
-// ─── HISTORY DRAWER (dashboard) ───────────────────────────────
 let drawerOpen = false;
-
 function toggleHistoryDrawer() {
   drawerOpen = !drawerOpen;
-  const body    = document.getElementById('historyDrawerBody');
-  const chevron = document.getElementById('historyDrawerChevron');
-  const drawer  = document.getElementById('historyDrawer');
-  body.classList.toggle('open', drawerOpen);
-  chevron.classList.toggle('flipped', drawerOpen);
-  drawer.classList.toggle('drawer-open', drawerOpen);
+  document.getElementById('historyDrawerBody').classList.toggle('open', drawerOpen);
+  document.getElementById('historyDrawerChevron').classList.toggle('flipped', drawerOpen);
+  document.getElementById('historyDrawer').classList.toggle('drawer-open', drawerOpen);
 }
 
 // ─── CSV PROCESSING ───────────────────────────────────────────
@@ -329,219 +236,225 @@ function processFile(file) {
   document.getElementById('loadingOverlay').classList.add('show');
   const lt = document.getElementById('loadingText');
   if (lt) lt.textContent = 'Processing Data…';
-
   setTimeout(() => {
     Papa.parse(file, {
       complete: results => {
         try {
           const rows = results.data;
-
-          // Guard: must have at least a few rows of data
           if (!rows || rows.length < 4) {
             document.getElementById('loadingOverlay').classList.remove('show');
-            showError('Empty or Invalid CSV', 'The file has too few rows. Make sure it\'s the correct leads report.');
+            showError('Empty or Invalid CSV', 'The file has too few rows.');
             return;
           }
-
-          // Guard: check the file isn't just whitespace/empty rows
-          const nonEmpty = rows.filter(r => r.some(cell => cell && cell.toString().trim() !== ''));
+          const nonEmpty = rows.filter(r => r.some(c => c && c.toString().trim() !== ''));
           if (nonEmpty.length < 4) {
             document.getElementById('loadingOverlay').classList.remove('show');
             showError('Empty CSV', 'The CSV file appears to have no usable data.');
             return;
           }
-
           buildDashboard(rows, file.name, results.data);
         } catch (err) {
           document.getElementById('loadingOverlay').classList.remove('show');
-          showError('Parse Error', 'Could not read the CSV. Make sure it\'s not corrupted or password-protected.');
+          showError('Parse Error', 'Could not read the CSV. Make sure it\'s not corrupted.');
           console.error('CSV parse error:', err);
         }
       },
       error: (err) => {
         document.getElementById('loadingOverlay').classList.remove('show');
         showError('Read Error', 'Failed to read the file. Please try again.');
-        console.error('PapaParse error:', err);
       },
       skipEmptyLines: false
     });
   }, 100);
 }
 
-
-// ─── MARKETING LEADS VALIDATION ──────────────────────────────
+// ─── MARKETING LEADS VALIDATION ───────────────────────────────
 function isMarketingLeadsCSV(rows) {
   if (!rows || rows.length < 4) return false;
-
-  // Check 1: First 6 rows must contain Marketing Leads-specific terms together
   const headerFlat = rows.slice(0, 6).map(r => r.join(' ').toUpperCase()).join(' ');
-
   const hasMarketingTerms = (
     (headerFlat.includes('SALES REP') || headerFlat.includes('SALES REPRESENTATIVE')) &&
     (headerFlat.includes('SOURCE') || headerFlat.includes('LEAD SOURCE')) &&
     (headerFlat.includes('CONVERTED') || headerFlat.includes('GROSS SALES') || headerFlat.includes('TARGET'))
   );
-
-  // Check 2: Reject foreign file formats
   const allFlat = rows.slice(0, 10).map(r => r.join(' ').toUpperCase()).join(' ');
   const isForeignFormat = (
-    allFlat.includes('PRESENT ON SITE') ||
-    allFlat.includes('ABSENT') ||
-    allFlat.includes('OPEN POSITIONS') ||
-    allFlat.includes('NEWLY HIRES') ||
-    allFlat.includes('RESIGNED') ||
-    allFlat.includes('INVOICE') ||
-    allFlat.includes('PURCHASE ORDER') ||
-    allFlat.includes('PAYROLL') ||
-    allFlat.includes('EMPLOYEE ID') ||
-    allFlat.includes('DEPARTMENT') ||
-    allFlat.includes('SKU') ||
-    allFlat.includes('PRODUCT CODE')
+    allFlat.includes('PRESENT ON SITE') || allFlat.includes('ABSENT') ||
+    allFlat.includes('INVOICE') || allFlat.includes('PURCHASE ORDER') ||
+    allFlat.includes('PAYROLL') || allFlat.includes('EMPLOYEE ID') ||
+    allFlat.includes('SKU') || allFlat.includes('PRODUCT CODE')
   );
-
-  // Check 3: Data rows (row 3+) must have rep name in col 1 and numeric count in col 2
   let numericCountRows = 0;
   for (let i = 3; i < Math.min(rows.length, 15); i++) {
     const r = rows[i];
     const name  = r[1] ? r[1].trim() : '';
     const count = r[2] ? r[2].trim() : '';
-    if (name && name !== 'Grand Total' && /^\d+$/.test(count)) {
-      numericCountRows++;
-    }
+    if (name && name !== 'Grand Total' && /^\d+$/.test(count)) numericCountRows++;
   }
-  const hasValidDataRows = numericCountRows >= 1;
-
-  return hasMarketingTerms && !isForeignFormat && hasValidDataRows;
+  return hasMarketingTerms && !isForeignFormat && numericCountRows >= 1;
 }
 
-// ─── PERIOD DETECTION ─────────────────────────────────────────
-function detectPeriod(rows) {
-  const MONTHS = ['january','february','march','april','may','june',
-                  'july','august','september','october','november','december'];
-  const SHORT  = ['jan','feb','mar','apr','may','jun',
-                  'jul','aug','sep','oct','nov','dec'];
+// ─── MULTI-MONTH PARSER ────────────────────────────────────────
+/**
+ * Splits a flat CSV rows array into an array of month-blocks.
+ * Each block = { label, month, year, rows[] } where rows[] are
+ * the raw CSV rows belonging to that month (starting at the
+ * row where "Month YYYY" appears in col 0).
+ *
+ * Detection strategy:
+ *   - Any row whose col[0] matches /^[A-Za-z]+ \d{4}$/ (e.g. "January 2026")
+ *     is treated as the start of a new month block.
+ *   - Rows before the first such marker are skipped (they are the global header).
+ *   - Blank/separator rows between blocks are ignored.
+ */
+function parseMonthBlocks(rows) {
+  const MONTH_NAMES = ['january','february','march','april','may','june',
+                       'july','august','september','october','november','december'];
 
-  let foundMonth = null;
-  let foundYear  = null;
+  const blocks = [];
+  let currentBlock = null;
 
-  // Strategy 1: scan each cell individually across first 5 rows
-  for (let r = 0; r < Math.min(5, rows.length); r++) {
-    for (let c = 0; c < rows[r].length; c++) {
-      const cell = (rows[r][c] || '').trim().toLowerCase();
-      if (!cell) continue;
+  for (let i = 0; i < rows.length; i++) {
+    const row  = rows[i];
+    const col0 = (row[0] || '').trim();
 
-      // Full month name alone in a cell e.g. "JANUARY"
-      const mIdx = MONTHS.indexOf(cell);
-      if (mIdx !== -1) { foundMonth = MONTHS[mIdx]; continue; }
-
-      // Short month alone e.g. "JAN"
-      const sIdx = SHORT.indexOf(cell);
-      if (sIdx !== -1) { foundMonth = MONTHS[sIdx]; continue; }
-
-      // 4-digit year alone e.g. "2025"
-      if (/^\d{4}$/.test(cell) && parseInt(cell) > 2000) { foundYear = cell; continue; }
-
-      // "Month YYYY" together e.g. "January 2025"
-      for (let m = 0; m < MONTHS.length; m++) {
-        const combo = new RegExp('(' + MONTHS[m] + '|' + SHORT[m] + ')[^\\d]*(\\d{4})');
-        const match = cell.match(combo);
-        if (match) {
-          foundMonth = MONTHS[m];
-          foundYear  = match[2];
-        }
-      }
-
-      // "DD-Mon" format e.g. "25-Jan" — extract month and infer year
-      const ddMon = cell.match(/^\d{1,2}-([a-z]{3})$/);
-      if (ddMon) {
-        const si = SHORT.indexOf(ddMon[1]);
-        if (si !== -1) foundMonth = MONTHS[si];
-      }
-
-      // "MM/YYYY" or "MM-YYYY"
-      const numDate = cell.match(/^(\d{1,2})[\/-](\d{4})$/);
-      if (numDate) {
-        const mi = parseInt(numDate[1]) - 1;
-        if (mi >= 0 && mi < 12) { foundMonth = MONTHS[mi]; foundYear = numDate[2]; }
+    // Check if this row starts a new month block
+    const monthMatch = col0.match(/^([A-Za-z]+)\s+(\d{4})$/);
+    if (monthMatch) {
+      const monthName = monthMatch[1].toLowerCase();
+      const year      = monthMatch[2];
+      if (MONTH_NAMES.includes(monthName)) {
+        // Save previous block
+        if (currentBlock) blocks.push(currentBlock);
+        const label = monthMatch[1].charAt(0).toUpperCase() + monthMatch[1].slice(1).toLowerCase() + ' ' + year;
+        currentBlock = { label, month: monthName, year, rows: [row] };
+        continue;
       }
     }
+
+    // Append to current block if we have one
+    if (currentBlock) currentBlock.rows.push(row);
   }
 
-  // Strategy 2: if year still missing, try to find it anywhere in the data rows
-  if (foundMonth && !foundYear) {
-    for (let r = 0; r < Math.min(8, rows.length); r++) {
-      for (let c = 0; c < rows[r].length; c++) {
-        const cell = (rows[r][c] || '').trim();
-        // "DD-Mon-YY" or "DD-Mon-YYYY"
-        const fullDate = cell.match(/\d{1,2}-[a-zA-Z]{3}-?(\d{2,4})/);
-        if (fullDate) {
-          let yr = fullDate[1];
-          if (yr.length === 2) yr = '20' + yr;
-          foundYear = yr;
-          break;
-        }
-        // Standalone 4-digit year
-        if (/^\d{4}$/.test(cell) && parseInt(cell) > 2000) { foundYear = cell; break; }
-      }
-      if (foundYear) break;
-    }
-  }
+  // Push last block
+  if (currentBlock) blocks.push(currentBlock);
 
-  // Strategy 3: infer year from filename context stored in window or fall back to current year
-  if (foundMonth && !foundYear) {
-    foundYear = new Date().getFullYear().toString();
-  }
-
-  if (foundMonth) {
-    return {
-      month: foundMonth.charAt(0).toUpperCase() + foundMonth.slice(1),
-      year:  foundYear || new Date().getFullYear().toString()
-    };
-  }
-  return null;
+  return blocks;
 }
 
-function periodFromFilename(fileName) {
-  const MONTHS = ['january','february','march','april','may','june',
-                  'july','august','september','october','november','december'];
-  const SHORT  = ['jan','feb','mar','apr','may','jun',
-                  'jul','aug','sep','oct','nov','dec'];
-  const name = fileName.toLowerCase();
-  for (let m = 0; m < MONTHS.length; m++) {
-    const yearMatch = name.match(new RegExp('(' + MONTHS[m] + '|' + SHORT[m] + ')[^\\d]*(\\d{4})'));
-    if (yearMatch) {
-      const mn = MONTHS[m];
-      return { month: mn.charAt(0).toUpperCase() + mn.slice(1), year: yearMatch[2] };
+/**
+ * Extracts structured data from a single month block's rows.
+ * Returns { label, month, year, reps[], sources[], cvtSources[],
+ *           actualLeads, targetLeads, pct, totalConverted, totalGS, totalGK, totalFT }
+ */
+function extractMonthData(block) {
+  const rows = block.rows;
+
+  // ── Reps (col 1 = name, col 2 = count) ─────────────────────
+  const repMap = new Map();
+  for (let i = 0; i < rows.length; i++) {
+    const name  = (rows[i][1] || '').trim();
+    const count = parseInt((rows[i][2] || '').replace(/,/g, ''));
+    if (name && name !== 'Grand Total' && !isNaN(count) && count > 0) {
+      repMap.set(name, (repMap.get(name) || 0) + count);
     }
   }
-  // Try MM-YYYY or MM_YYYY in filename
-  const numMatch = name.match(/(\d{1,2})[-_](\d{4})/);
-  if (numMatch) {
-    const mIdx = parseInt(numMatch[1]) - 1;
-    if (mIdx >= 0 && mIdx < 12) {
-      const mn = MONTHS[mIdx];
-      return { month: mn.charAt(0).toUpperCase() + mn.slice(1), year: numMatch[2] };
+  const reps = Array.from(repMap, ([name, count]) => ({ name, count }));
+
+  // ── Lead Sources (col 3 = source name, col 4 = count) ───────
+  const sources = [];
+  for (let i = 0; i < rows.length; i++) {
+    const src = (rows[i][3] || '').trim();
+    const cnt = parseInt((rows[i][4] || '').replace(/,/g, ''));
+    if (src && src !== 'Grand Total' && src !== 'Source' &&
+        src !== 'JANUARY' && src !== 'COUNTA of Source' &&
+        !isNaN(cnt) && cnt > 0) {
+      sources.push({ name: src, count: cnt });
     }
   }
-  return null;
+
+  // ── Converted Sources (col 8=src, col 11=GK, col 12=GS) ─────
+  const cvtSources = [];
+  for (let i = 0; i < rows.length; i++) {
+    const src  = (rows[i][8]  || '').trim();
+    const gk   = parseFloat((rows[i][11] || '0').replace(/[₱,]/g, '')) || 0;
+    const gs   = parseFloat((rows[i][12] || '0').replace(/[₱,]/g, '')) || 0;
+    if (src && src !== 'Grand Total' && src !== 'Source' && gk + gs > 0) {
+      cvtSources.push({ name: src, gk, gs });
+    }
+  }
+
+  // ── Summary row = first row of the block (row[0]) ───────────
+  // Col indices: [5]=Actual, [6]=Target, [7]=Pct, [10]=TotalCvtd,
+  //              [13]=TotalFT, [14]=TotalGK, [15]=TotalGS, [16]=OverallGS
+  const sr = rows[0];
+  const actualLeads    = parseInt((sr[5]  || '0').replace(/,/g, '')) || sources.reduce((s,r)=>s+r.count,0);
+  const targetLeads    = parseInt((sr[6]  || '0').replace(/,/g, '')) || 0;
+  const pctRaw         = parseFloat((sr[7]  || '0').replace('%','')) || 0;
+  const pct            = isNaN(pctRaw) ? 0 : pctRaw;
+  const totalConverted = parseInt((sr[10] || '0').replace(/,/g, '')) || 0;
+  const totalFT        = parseInt((sr[13] || '0').replace(/,/g, '')) || 0;
+  const totalGK        = parseFloat((sr[14] || '0').replace(/[₱,]/g, '')) || 0;
+  const totalGS        = parseFloat((sr[15] || '0').replace(/[₱,]/g, '')) || 0;
+
+  return {
+    label: block.label,
+    month: block.month,
+    year:  block.year,
+    reps, sources, cvtSources,
+    actualLeads, targetLeads, pct,
+    totalConverted, totalFT, totalGK, totalGS
+  };
 }
 
+/**
+ * Combines an array of monthData objects into a single aggregated object
+ * for the "All Months" combined view.
+ */
+function combineMonthData(monthDataArr) {
+  const repMap = new Map();
+  const srcMap = new Map();
+  const cvtMap = new Map();
 
-// ─── BUILD DASHBOARD ──────────────────────────────────────────
-// isLiveSync : true when called from Google Sheets connector
-// silent     : true for background refresh — skips loading overlay
-function buildDashboard(rows, fileName, rawRows, isLiveSync, silent) {
-  if (!isMarketingLeadsCSV(rows)) {
-    document.getElementById('loadingOverlay').classList.remove('show');
-    showError(
-      'Incompatible File',
-      isLiveSync
-        ? 'The connected Google Sheet does not appear to be a Marketing Leads report. Check the sheet layout.'
-        : 'This file does not appear to be a Marketing Leads report. Please upload the correct CSV file.'
-    );
-    return;
+  let actualLeads = 0, targetLeads = 0, totalConverted = 0;
+  let totalGK = 0, totalGS = 0, totalFT = 0;
+
+  for (const md of monthDataArr) {
+    actualLeads    += md.actualLeads;
+    targetLeads    += md.targetLeads;
+    totalConverted += md.totalConverted;
+    totalFT        += md.totalFT;
+    totalGK        += md.totalGK;
+    totalGS        += md.totalGS;
+
+    for (const r of md.reps) {
+      repMap.set(r.name, (repMap.get(r.name) || 0) + r.count);
+    }
+    for (const s of md.sources) {
+      srcMap.set(s.name, (srcMap.get(s.name) || 0) + s.count);
+    }
+    for (const c of md.cvtSources) {
+      const existing = cvtMap.get(c.name) || { name: c.name, gk: 0, gs: 0 };
+      cvtMap.set(c.name, { name: c.name, gk: existing.gk + c.gk, gs: existing.gs + c.gs });
+    }
   }
-  buildLeadsDashboard(rows, fileName, rawRows, isLiveSync, silent);
+
+  const pct = targetLeads > 0 ? (actualLeads / targetLeads) * 100 : 0;
+  const labels = monthDataArr.map(m => m.label);
+  const label  = labels.length > 1
+    ? `${monthDataArr[0].label} – ${monthDataArr[monthDataArr.length-1].label}`
+    : (labels[0] || 'All Months');
+
+  return {
+    label,
+    month: 'combined',
+    year:  monthDataArr[0]?.year || '',
+    reps:        Array.from(repMap, ([name, count]) => ({ name, count })),
+    sources:     Array.from(srcMap, ([name, count]) => ({ name, count })),
+    cvtSources:  Array.from(cvtMap.values()),
+    actualLeads, targetLeads, pct,
+    totalConverted, totalFT, totalGK, totalGS
+  };
 }
 
 // ─── SMART CURRENCY FORMAT ────────────────────────────────────
@@ -552,98 +465,144 @@ function fmtPeso(val) {
   return '₱' + val.toLocaleString();
 }
 
+// ─── MONTH SELECTOR STATE ─────────────────────────────────────
+// Holds all parsed month data for the currently loaded file
+window._allMonthData  = [];   // array of monthData objects
+window._activeMonthIdx = -1;  // -1 = combined view
 
-// ─── BUILD LEADS DASHBOARD ────────────────────────────────────
-function buildLeadsDashboard(rows, fileName, rawRows, isLiveSync, silent) {
-  // ── Detect period from CSV content or filename ─────────────────
-  const period = detectPeriod(rows) || periodFromFilename(fileName) || null;
-  const periodLabel = period ? `${period.month} ${period.year}` : 'Period';
-  const periodShort = period ? `${period.month.slice(0,3)} ${period.year}` : '—';
-  const fiscalRange = period ? `${period.year}–${parseInt(period.year)+1}` : '';
-
-  // Hide leads dashboard, show leads dashboard
-  document.getElementById('dashboard').classList.remove('visible');
-  // Parse rep data (rows 3+, col 1=rep, col 2=count)
-  // Merge duplicate rep names by summing counts — prevents multiple bars per
-  // rep when the source CSV lists the same name across multiple rows.
-  const repMap = new Map();
-  for (let i = 3; i < rows.length; i++) {
-    const r     = rows[i];
-    const name  = r[1] ? r[1].trim() : '';
-    const count = r[2] ? parseInt(r[2]) : 0;
-    if (name && name !== 'Grand Total' && !isNaN(count) && count > 0) {
-      repMap.set(name, (repMap.get(name) || 0) + count);
-    }
-  }
-  const reps = Array.from(repMap, ([name, count]) => ({ name, count }));
-
-  // Parse source data
-  const sources = [];
-  for (let i = 3; i < rows.length; i++) {
-    const r   = rows[i];
-    const src = r[3] ? r[3].trim() : '';
-    const cnt = r[4] ? parseInt(r[4]) : 0;
-    if (src && src !== 'Grand Total' && src !== 'Source' && !isNaN(cnt) && cnt > 0) {
-      sources.push({ name: src, count: cnt });
-    }
+// ─── MONTH SELECTOR UI ────────────────────────────────────────
+function renderMonthSelector(monthDataArr, activeIdx) {
+  let sel = document.getElementById('monthSelectorWrap');
+  if (!sel) {
+    // Create the wrapper and inject into dash-header controls area
+    sel = document.createElement('div');
+    sel.id = 'monthSelectorWrap';
+    sel.style.cssText = 'display:flex;align-items:center;gap:0.5rem;';
+    // Insert before the mode toggle inline button
+    const headerControls = document.querySelector('.dash-header > div:last-child');
+    if (headerControls) headerControls.insertBefore(sel, headerControls.firstChild);
   }
 
-  // Parse converted sources
-  const cvtSources = [];
-  for (let i = 3; i < rows.length; i++) {
-    const r    = rows[i];
-    const src  = r[8]  ? r[8].trim() : '';
-    const gk   = r[11] ? r[11].replace(/[₱,]/g, '') : '0';
-    const gs   = r[12] ? r[12].replace(/[₱,]/g, '') : '0';
-    const gkVal = parseFloat(gk) || 0;
-    const gsVal = parseFloat(gs) || 0;
-    if (src && gkVal + gsVal > 0) {
-      cvtSources.push({ name: src, gk: gkVal, gs: gsVal });
-    }
+  if (monthDataArr.length <= 1) {
+    sel.style.display = 'none';
+    return;
   }
 
-  // Totals derived from CSV
-  const actualLeads  = sources.reduce((s, r) => s + r.count, 0);
-  const totalReps    = reps.reduce((s, r) => s + r.count, 0);
-  const targetLeads  = rows[3] ? (parseInt((rows[3][6] || '0').replace(/,/g, '')) || 0) : 0;
-  const pctRaw       = rows[3] ? parseFloat((rows[3][7] || '0').replace('%','')) : 0;
-  const pct          = isNaN(pctRaw) ? ((targetLeads > 0 ? (actualLeads / targetLeads) * 100 : 0)).toFixed(2) : pctRaw.toFixed(2);
-  const totalConverted = rows[3] ? (parseInt((rows[3][10] || '0').replace(/,/g, '')) || 0) : 0;
-  const totalGS      = rows[3] ? (parseFloat((rows[3][15] || '0').replace(/[₱,]/g, '')) || 0) : 0;
-  const totalGK      = rows[3] ? (parseFloat((rows[3][14] || '0').replace(/[₱,]/g, '')) || 0) : 0;
+  sel.style.display = 'flex';
+  sel.innerHTML = `
+    <label style="font-family:'Montserrat',sans-serif;font-size:0.62rem;font-weight:700;
+                  letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">
+      Period
+    </label>
+    <select id="monthSelector" onchange="onMonthSelect(this.value)"
+      style="background:var(--bg-card);border:1px solid var(--border-orange);
+             color:var(--text-primary);font-family:'Montserrat',sans-serif;
+             font-size:0.7rem;font-weight:600;letter-spacing:0.05em;
+             padding:0.4rem 0.7rem;border-radius:8px;cursor:pointer;
+             outline:none;transition:border-color 0.2s;
+             appearance:none;-webkit-appearance:none;
+             background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23e67026' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E\");
+             background-repeat:no-repeat;background-position:right 0.6rem center;
+             padding-right:1.8rem;">
+      <option value="-1" ${activeIdx === -1 ? 'selected' : ''}>All Months (Combined)</option>
+      ${monthDataArr.map((md, i) => `
+        <option value="${i}" ${activeIdx === i ? 'selected' : ''}>${md.label}</option>
+      `).join('')}
+    </select>
+  `;
+}
+
+function onMonthSelect(value) {
+  const idx = parseInt(value);
+  window._activeMonthIdx = idx;
+  const md = idx === -1
+    ? combineMonthData(window._allMonthData)
+    : window._allMonthData[idx];
+  renderDashboardForData(md, window._activeFileName, window._allMonthData);
+}
+
+// ─── BUILD DASHBOARD (entry point) ────────────────────────────
+function buildDashboard(rows, fileName, rawRows, isLiveSync, silent) {
+  if (!isMarketingLeadsCSV(rows)) {
+    document.getElementById('loadingOverlay').classList.remove('show');
+    showError(
+      'Incompatible File',
+      isLiveSync
+        ? 'The connected Google Sheet does not appear to be a Marketing Leads report.'
+        : 'This file does not appear to be a Marketing Leads report.'
+    );
+    return;
+  }
+
+  // Parse all month blocks from the CSV
+  const blocks = parseMonthBlocks(rows);
+
+  if (blocks.length === 0) {
+    document.getElementById('loadingOverlay').classList.remove('show');
+    showError('No Month Data Found', 'Could not detect any month blocks in this file.');
+    return;
+  }
+
+  const monthDataArr = blocks.map(extractMonthData);
+
+  // Store globally for selector switching
+  window._allMonthData   = monthDataArr;
+  window._activeFileName = fileName;
+  window._activeMonthIdx = monthDataArr.length > 1 ? -1 : 0; // default: combined if multi-month
+
+  // Pick initial view data
+  const initialData = window._activeMonthIdx === -1
+    ? combineMonthData(monthDataArr)
+    : monthDataArr[0];
+
+  renderDashboardForData(initialData, fileName, monthDataArr, isLiveSync, silent);
+
+  // Save to history
+  if (rawRows && !isLiveSync) addToHistory(fileName, rawRows);
+  renderHistory();
+}
+
+// ─── RENDER DASHBOARD FOR A SPECIFIC monthData ────────────────
+function renderDashboardForData(md, fileName, allMonthData, isLiveSync, silent) {
+  const periodLabel = md.label;
+  const periodShort = md.label.length > 15 ? md.label.slice(0, 12) + '…' : md.label;
 
   // ── Stats Strip ───────────────────────────────────────────────
   const statsData = [
-    { val: totalReps.toLocaleString(), lbl: 'Total Rep Entries' },
-    { val: actualLeads.toLocaleString(), lbl: 'Leads Gathered' },
-    { val: totalConverted.toLocaleString(), lbl: 'Converted' },
-    { val: pct + '%', lbl: 'Target Rate' },
-    { val: fmtPeso(totalGS), lbl: 'Gross Sales' },
-    { val: reps.length.toString(), lbl: 'Active Reps' },
+    { val: md.reps.reduce((s,r)=>s+r.count,0).toLocaleString(), lbl: 'Total Rep Entries' },
+    { val: md.actualLeads.toLocaleString(), lbl: 'Leads Gathered' },
+    { val: md.totalConverted.toLocaleString(), lbl: 'Converted' },
+    { val: md.pct.toFixed(2) + '%', lbl: 'Target Rate' },
+    { val: fmtPeso(md.totalGS), lbl: 'Gross Sales' },
+    { val: md.reps.length.toString(), lbl: 'Active Reps' },
   ];
   const track = document.getElementById('statsTrack');
-  const allItems = [...statsData, ...statsData]; // duplicate for infinite scroll
+  const allItems = [...statsData, ...statsData];
   track.innerHTML = allItems.map(s =>
     `<div class="stat-item"><span class="val">${s.val}</span><span class="lbl">${s.lbl}</span></div>`
   ).join('');
   document.getElementById('statsStrip').style.display = 'block';
 
-  // ── File Info ─────────────────────────────────────────────────
+  // ── File / Period Info ────────────────────────────────────────
   const liveTag = isLiveSync ? ' 🟢' : '';
   document.getElementById('fileName').textContent    = fileName + liveTag;
-  document.getElementById('fileDetails').textContent = `${reps.length} sales reps · ${sources.length} lead sources · ${periodLabel} data`;
-  document.getElementById('dashMeta').textContent    = `Marketing Leads Report · ${fiscalRange || periodLabel}`;
+  document.getElementById('fileDetails').textContent =
+    `${md.reps.length} sales reps · ${md.sources.length} lead sources · ${periodLabel}`;
+  document.getElementById('dashMeta').textContent    = `Marketing Leads Report · ${periodLabel}`;
   const tagPeriod = document.getElementById('tagPeriod');
   if (tagPeriod) tagPeriod.textContent = periodShort;
 
+  // ── Month Selector ────────────────────────────────────────────
+  renderMonthSelector(allMonthData || window._allMonthData, window._activeMonthIdx);
+
   // ── KPI Cards ─────────────────────────────────────────────────
   const kpis = [
-    { label: 'Leads Gathered',       value: actualLeads.toLocaleString(),                     sub: `Target: ${targetLeads.toLocaleString()}`,  orange: true },
-    { label: 'Target Achievement',   value: pct + '%',                                         sub: 'Actual / Target',                          orange: true },
-    { label: 'Leads Converted',      value: totalConverted.toLocaleString(),                   sub: 'Successful conversions' },
-    { label: 'Total Gross Sales',    value: fmtPeso(totalGS),                                   sub: periodLabel },
-    { label: 'GK Value',             value: fmtPeso(totalGK),                                   sub: 'Gross Kumpirmasyon' },
-    { label: 'Active Reps',          value: reps.length.toString(),                             sub: 'Sales representatives' },
+    { label: 'Leads Gathered',     value: md.actualLeads.toLocaleString(),    sub: `Target: ${md.targetLeads.toLocaleString()}`,  orange: true },
+    { label: 'Target Achievement', value: md.pct.toFixed(2) + '%',            sub: 'Actual / Target',                             orange: true },
+    { label: 'Leads Converted',    value: md.totalConverted.toLocaleString(), sub: 'Successful conversions' },
+    { label: 'Total Gross Sales',  value: fmtPeso(md.totalGS),                sub: periodLabel },
+    { label: 'GK Value',           value: fmtPeso(md.totalGK),                sub: 'Gross Kumpirmasyon' },
+    { label: 'Active Reps',        value: md.reps.length.toString(),          sub: 'Sales representatives' },
   ];
 
   const kpiGrid = document.getElementById('kpiGrid');
@@ -661,62 +620,58 @@ function buildLeadsDashboard(rows, fileName, rawRows, isLiveSync, silent) {
     kpiGrid.appendChild(card);
   });
 
-  // Store data for Present View
+  // ── Store for Present View ────────────────────────────────────
   window._pvData = {
-    kpis, sources,
-    donutSources: sources.slice(),
-    cvtSources, reps,
+    kpis,
+    sources:      md.sources,
+    donutSources: md.sources.slice(),
+    cvtSources:   md.cvtSources,
+    reps:         md.reps,
     fileName,
-    fileDetails: `${reps.length} sales reps · ${sources.length} sources`
+    fileDetails:  `${md.reps.length} sales reps · ${md.sources.length} sources`
   };
 
   // ── Destroy old charts ────────────────────────────────────────
   Object.values(charts).forEach(c => c.destroy());
   charts = {};
-
   Chart.defaults.color = '#fafafa';
   Chart.defaults.font  = { family: 'Montserrat', size: 11 };
-
   const gridColor = 'rgba(113,112,116,0.15)';
   const tickColor = '#a6a6a8';
 
   // ── Build charts (from charts.js) ─────────────────────────────
-  charts.sourceBar = buildSourceBar(sources, gridColor, tickColor);
-  buildDonutChart(sources);
-  charts.salesBar  = buildSalesBar(cvtSources, gridColor, tickColor);
-  charts.repBar    = buildRepBar(reps, gridColor, tickColor);
+  charts.sourceBar = buildSourceBar(md.sources, gridColor, tickColor);
+  buildDonutChart(md.sources);
+  charts.salesBar  = buildSalesBar(md.cvtSources, gridColor, tickColor);
+  charts.repBar    = buildRepBar(md.reps, gridColor, tickColor);
 
   // ── Source Cards ──────────────────────────────────────────────
-  const maxCount = Math.max(...sources.map(s => s.count));
+  const maxCount = Math.max(...md.sources.map(s => s.count), 1);
   const srcGrid  = document.getElementById('sourceGrid');
   srcGrid.innerHTML = '';
-  sources.sort((a,b) => b.count - a.count).forEach((s, i) => {
+  [...md.sources].sort((a,b) => b.count - a.count).forEach((s, i) => {
     const card = document.createElement('div');
     card.className = 'source-card';
     card.style.animationDelay = (i * 0.05) + 's';
-    const pct = Math.round((s.count / maxCount) * 100);
+    const pctW = Math.round((s.count / maxCount) * 100);
     card.innerHTML = `
       <div class="src-name">${s.name}</div>
       <div class="src-val">${s.count}</div>
-      <div class="src-bar"><div class="src-bar-fill" style="width:0%" data-width="${pct}%"></div></div>
+      <div class="src-bar"><div class="src-bar-fill" style="width:0%" data-width="${pctW}%"></div></div>
     `;
     srcGrid.appendChild(card);
   });
-
-  // Animate bar fills after paint
   requestAnimationFrame(() => {
-    document.querySelectorAll('.src-bar-fill').forEach(el => {
-      el.style.width = el.dataset.width;
-    });
+    document.querySelectorAll('.src-bar-fill').forEach(el => { el.style.width = el.dataset.width; });
   });
 
   // ── Rep Table ─────────────────────────────────────────────────
   const tbody      = document.getElementById('repTableBody');
-  const total      = reps.reduce((s, r) => s + r.count, 0);
-  const sortedReps = [...reps].sort((a,b) => b.count - a.count);
+  const totalReps  = md.reps.reduce((s,r) => s + r.count, 0);
+  const sortedReps = [...md.reps].sort((a,b) => b.count - a.count);
   tbody.innerHTML  = '';
   sortedReps.forEach((r, i) => {
-    const contrib = ((r.count / total) * 100).toFixed(1);
+    const contrib = ((r.count / totalReps) * 100).toFixed(1);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${i + 1}</td>
@@ -733,16 +688,11 @@ function buildLeadsDashboard(rows, fileName, rawRows, isLiveSync, silent) {
     `;
     tbody.appendChild(tr);
   });
-
   document.getElementById('tableCount').textContent = `${sortedReps.length} representatives`;
   const repTitle = document.getElementById('repTableTitle');
   if (repTitle) repTitle.textContent = `Sales Representatives — ${periodLabel}`;
 
-  // ── Save to history (only for CSV uploads, not live sync) ────
-  if (rawRows && !isLiveSync) addToHistory(fileName, rawRows);
-  renderHistory();
-
-  // ── Show leads dashboard ──────────────────────────────────────
+  // ── Show dashboard ────────────────────────────────────────────
   document.getElementById('loadingOverlay').classList.remove('show');
   document.getElementById('landing').style.display = 'none';
   document.getElementById('statsStrip').style.display = 'block';
@@ -758,8 +708,14 @@ function backToLanding() {
   document.getElementById('statsStrip').style.display = 'none';
   document.getElementById('statsTrack').innerHTML = '';
   document.getElementById('fileInput').value = '';
+  // Remove month selector
+  const sel = document.getElementById('monthSelectorWrap');
+  if (sel) sel.remove();
+  // Reset state
+  window._allMonthData   = [];
+  window._activeMonthIdx = -1;
+  window._activeFileName = '';
   setDashboardMode(false);
-  // Collapse drawer
   drawerOpen = false;
   document.getElementById('historyDrawerBody')?.classList.remove('open');
   document.getElementById('historyDrawerChevron')?.classList.remove('flipped');
@@ -767,23 +723,17 @@ function backToLanding() {
   window.scrollTo(0, 0);
 }
 
-
 // ─── AUTO-CLOSE DRAWER ON SCROLL UP ──────────────────────────
 let lastScrollY = 0;
 window.addEventListener('scroll', () => {
   const currentY = window.scrollY;
-  const scrollingUp = currentY < lastScrollY;
-  lastScrollY = currentY;
-
-  if (scrollingUp) {
-    if (drawerOpen) {
-      drawerOpen = false;
-      document.getElementById('historyDrawerBody')?.classList.remove('open');
-      document.getElementById('historyDrawerChevron')?.classList.remove('flipped');
-      document.getElementById('historyDrawer')?.classList.remove('drawer-open');
-    }
-
+  if (currentY < lastScrollY && drawerOpen) {
+    drawerOpen = false;
+    document.getElementById('historyDrawerBody')?.classList.remove('open');
+    document.getElementById('historyDrawerChevron')?.classList.remove('flipped');
+    document.getElementById('historyDrawer')?.classList.remove('drawer-open');
   }
+  lastScrollY = currentY;
 }, { passive: true });
 
 // ─── INIT ─────────────────────────────────────────────────────

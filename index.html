@@ -21,175 +21,6 @@
 
 <style>
 /* ─── GOOGLE SHEETS SYNC UI ──────────────────────────────── */
-.upload-divider {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  width: min(520px, 90vw);
-  margin: 1.2rem auto 0;
-  opacity: 0;
-  animation: fadeUp 0.8s ease forwards 1.25s;
-}
-.upload-divider::before,
-.upload-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(230,112,38,0.3), transparent);
-}
-.upload-divider span {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.gsheet-zone {
-  position: relative;
-  z-index: 10;
-  width: min(520px, 90vw);
-  border: 2px solid var(--border-orange);
-  border-radius: 16px;
-  padding: 1.6rem 1.8rem 1.8rem;
-  text-align: left;
-  background: var(--upload-bg);
-  backdrop-filter: blur(12px);
-  opacity: 0;
-  animation: fadeUp 0.8s ease forwards 1.35s;
-  margin: 0.9rem auto 0;
-  transition: all 0.3s ease;
-}
-
-.gsheet-zone:hover {
-  border-color: rgba(230,112,38,0.5);
-  box-shadow: 0 12px 40px rgba(230,112,38,0.1);
-}
-
-.gsheet-zone-header {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  margin-bottom: 1rem;
-}
-
-.gsheet-icon {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  background: rgba(230,112,38,0.15);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.gsheet-icon svg {
-  width: 16px;
-  height: 16px;
-  fill: var(--orange);
-}
-
-.gsheet-zone-title {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 700;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-}
-
-.gsheet-zone-sub {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.68rem;
-  color: var(--text-secondary);
-  margin-bottom: 1rem;
-  line-height: 1.5;
-}
-
-.gsheet-input-row {
-  display: flex;
-  gap: 0.6rem;
-  align-items: stretch;
-}
-
-.gsheet-input {
-  flex: 1;
-  background: rgba(0,0,0,0.2);
-  border: 1px solid var(--border-orange);
-  border-radius: 8px;
-  padding: 0.65rem 0.9rem;
-  color: var(--text-primary);
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.72rem;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  min-width: 0;
-}
-
-.gsheet-input::placeholder { color: var(--text-muted); }
-
-.gsheet-input:focus {
-  border-color: var(--orange);
-  box-shadow: 0 0 0 3px rgba(230,112,38,0.12);
-}
-
-.gsheet-connect-btn {
-  background: var(--orange);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0 1.2rem;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-shrink: 0;
-}
-
-.gsheet-connect-btn:hover {
-  background: var(--orange-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(230,112,38,0.35);
-}
-
-.gsheet-connect-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.gsheet-connect-btn svg {
-  width: 13px;
-  height: 13px;
-  fill: #fff;
-  flex-shrink: 0;
-}
-
-.gsheet-help {
-  margin-top: 0.7rem;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
-.gsheet-help a {
-  color: var(--orange);
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.gsheet-help a:hover { text-decoration: underline; }
-
 /* ─── SYNC INDICATOR (dashboard header) ──────────────────── */
 .sync-indicator {
   display: none;
@@ -393,73 +224,77 @@ body.light-mode .gsheet-input {
       </div>
     </div>
 
-    <p class="hero-headline">
-      Transform your <span>sales data</span> into actionable insights.<br>
-      Upload your leads report or connect a live Google Sheet.
-    </p>
+    <!-- Tabbed Upload Card -->
+    <div class="upload-card" id="uploadCard">
 
-    <!-- CSV Upload Zone -->
-    <div class="upload-zone" id="uploadZone">
-      <div class="upload-icon">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
-        </svg>
-      </div>
-      <h3>Upload Leads Report</h3>
-      <p>Drag & drop your CSV file here, or click to browse</p>
-      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-        Select CSV File
-      </button>
-      <input type="file" id="fileInput" accept=".csv">
-    </div>
-
-    <!-- Divider -->
-    <div class="upload-divider">
-      <span>or connect live</span>
-    </div>
-
-    <!-- Google Sheets Zone -->
-    <div class="gsheet-zone">
-      <div class="gsheet-zone-header">
-        <div class="gsheet-icon">
-          <!-- Google Sheets icon -->
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11H6v-2h12v2zm0-4H6V8h12v2z"/>
-          </svg>
-        </div>
-        <div class="gsheet-zone-title">Connect Google Sheet</div>
-      </div>
-      <div class="gsheet-zone-sub">
-        Paste your <strong style="color:var(--orange)">Publish to web</strong> CSV link for real-time auto-refresh every 30 seconds.
-        In Google Sheets: <em>File → Share → Publish to web → CSV → Publish</em>.
-      </div>
-      <div class="gsheet-input-row">
-        <input
-          class="gsheet-input"
-          id="gsheetUrlInput"
-          type="text"
-          placeholder="https://docs.google.com/spreadsheets/d/..."
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <button class="gsheet-connect-btn" id="gsheetConnectBtn" onclick="connectGoogleSheet()">
-          <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-          Connect
+      <!-- Tab Bar -->
+      <div class="upload-tabs">
+        <button class="upload-tab active" id="tabCsv" onclick="switchTab('csv')">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+          CSV Upload
+        </button>
+        <button class="upload-tab" id="tabSheet" onclick="switchTab('sheet')">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11H6v-2h12v2zm0-4H6V8h12v2z"/></svg>
+          Google Sheets
+          <span class="tab-live-badge">LIVE</span>
         </button>
       </div>
-      <div class="gsheet-help">
-        Not published yet? &nbsp;<a onclick="showHowTo()">How to publish your Google Sheet as CSV →</a>
+
+      <!-- CSV Panel -->
+      <div class="upload-panel" id="panelCsv">
+        <div class="upload-zone" id="uploadZone">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
+            </svg>
+          </div>
+          <h3>Upload Leads Report</h3>
+          <p>Drag & drop your CSV file here, or click to browse</p>
+          <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+            Select CSV File
+          </button>
+          <input type="file" id="fileInput" accept=".csv">
+        </div>
       </div>
-    </div>
+
+      <!-- Google Sheets Panel -->
+      <div class="upload-panel" id="panelSheet" style="display:none;">
+        <div class="gsheet-panel-inner">
+          <div class="gsheet-icon-large">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11H6v-2h12v2zm0-4H6V8h12v2z"/></svg>
+          </div>
+          <h3>Connect Google Sheet</h3>
+          <p>Auto-refreshes every <strong>30 seconds</strong> for live data.</p>
+          <div class="gsheet-input-row">
+            <input
+              class="gsheet-input"
+              id="gsheetUrlInput"
+              type="text"
+              placeholder="https://docs.google.com/spreadsheets/d/..."
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button class="gsheet-connect-btn" id="gsheetConnectBtn" onclick="connectGoogleSheet()">
+              <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+              Connect
+            </button>
+          </div>
+          <div class="gsheet-help">
+            Need to publish first? &nbsp;<a onclick="showHowTo()">How to publish as CSV →</a>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.upload-card -->
+
+    <!-- Recent Files trigger (landing) -->
+    <button class="history-trigger-btn" id="historyTriggerBtn" style="display:none;" onclick="openHistoryModal()">
+      <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7v4l5-5-5-5v4z"/></svg>
+      Recent Files
+      <span class="history-trigger-count" id="historyTriggerCount">0</span>
+    </button>
 
   </div>
-
-  <!-- Recent Files trigger (landing) -->
-  <button class="history-trigger-btn" id="historyTriggerBtn" style="display:none;" onclick="openHistoryModal()">
-    <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7v4l5-5-5-5v4z"/></svg>
-    Recent Files
-    <span class="history-trigger-count" id="historyTriggerCount">0</span>
-  </button>
 
   <div class="scroll-cue"><span></span></div>
 </section>
@@ -673,6 +508,27 @@ body.light-mode .gsheet-input {
   </div>
   <button class="error-toast-close" onclick="hideError()" aria-label="Dismiss">✕</button>
 </div>
+
+<!-- ─── Tab Switch ─── -->
+<script>
+function switchTab(tab) {
+  var csvTab    = document.getElementById('tabCsv');
+  var sheetTab  = document.getElementById('tabSheet');
+  var csvPanel  = document.getElementById('panelCsv');
+  var sheetPanel= document.getElementById('panelSheet');
+  if (tab === 'csv') {
+    csvTab.classList.add('active');
+    sheetTab.classList.remove('active');
+    csvPanel.style.display = '';
+    sheetPanel.style.display = 'none';
+  } else {
+    sheetTab.classList.add('active');
+    csvTab.classList.remove('active');
+    sheetPanel.style.display = '';
+    csvPanel.style.display = 'none';
+  }
+}
+</script>
 
 <!-- ─── Scripts ─── -->
 <script src="js/charts.js"></script>

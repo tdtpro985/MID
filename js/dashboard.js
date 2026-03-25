@@ -327,6 +327,8 @@ let charts = {};
 
 function processFile(file) {
   document.getElementById('loadingOverlay').classList.add('show');
+  const lt = document.getElementById('loadingText');
+  if (lt) lt.textContent = 'Processing Data…';
 
   setTimeout(() => {
     Papa.parse(file, {
@@ -526,16 +528,20 @@ function periodFromFilename(fileName) {
 
 
 // ─── BUILD DASHBOARD ──────────────────────────────────────────
-function buildDashboard(rows, fileName, rawRows) {
+// isLiveSync : true when called from Google Sheets connector
+// silent     : true for background refresh — skips loading overlay
+function buildDashboard(rows, fileName, rawRows, isLiveSync, silent) {
   if (!isMarketingLeadsCSV(rows)) {
     document.getElementById('loadingOverlay').classList.remove('show');
     showError(
       'Incompatible File',
-      'This file does not appear to be a Marketing Leads report. Please upload the correct CSV file.'
+      isLiveSync
+        ? 'The connected Google Sheet does not appear to be a Marketing Leads report. Check the sheet layout.'
+        : 'This file does not appear to be a Marketing Leads report. Please upload the correct CSV file.'
     );
     return;
   }
-  buildLeadsDashboard(rows, fileName, rawRows);
+  buildLeadsDashboard(rows, fileName, rawRows, isLiveSync, silent);
 }
 
 // ─── SMART CURRENCY FORMAT ────────────────────────────────────
@@ -548,7 +554,7 @@ function fmtPeso(val) {
 
 
 // ─── BUILD LEADS DASHBOARD ────────────────────────────────────
-function buildLeadsDashboard(rows, fileName, rawRows) {
+function buildLeadsDashboard(rows, fileName, rawRows, isLiveSync, silent) {
   // ── Detect period from CSV content or filename ─────────────────
   const period = detectPeriod(rows) || periodFromFilename(fileName) || null;
   const periodLabel = period ? `${period.month} ${period.year}` : 'Period';
@@ -623,7 +629,8 @@ function buildLeadsDashboard(rows, fileName, rawRows) {
   document.getElementById('statsStrip').style.display = 'block';
 
   // ── File Info ─────────────────────────────────────────────────
-  document.getElementById('fileName').textContent    = fileName;
+  const liveTag = isLiveSync ? ' 🟢' : '';
+  document.getElementById('fileName').textContent    = fileName + liveTag;
   document.getElementById('fileDetails').textContent = `${reps.length} sales reps · ${sources.length} lead sources · ${periodLabel} data`;
   document.getElementById('dashMeta').textContent    = `Marketing Leads Report · ${fiscalRange || periodLabel}`;
   const tagPeriod = document.getElementById('tagPeriod');
@@ -731,8 +738,8 @@ function buildLeadsDashboard(rows, fileName, rawRows) {
   const repTitle = document.getElementById('repTableTitle');
   if (repTitle) repTitle.textContent = `Sales Representatives — ${periodLabel}`;
 
-  // ── Save to history ───────────────────────────────────────────
-  if (rawRows) addToHistory(fileName, rawRows);
+  // ── Save to history (only for CSV uploads, not live sync) ────
+  if (rawRows && !isLiveSync) addToHistory(fileName, rawRows);
   renderHistory();
 
   // ── Show leads dashboard ──────────────────────────────────────
@@ -741,7 +748,7 @@ function buildLeadsDashboard(rows, fileName, rawRows) {
   document.getElementById('statsStrip').style.display = 'block';
   document.getElementById('dashboard').classList.add('visible');
   setDashboardMode(true);
-  window.scrollTo(0, 0);
+  if (!silent) window.scrollTo(0, 0);
 }
 
 // ─── BACK TO LANDING ──────────────────────────────────────────

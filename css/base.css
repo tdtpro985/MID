@@ -14,6 +14,78 @@ body {
   color: var(--text-primary);
   overflow-x: hidden;
   transition: background 0.4s ease, color 0.4s ease;
+  cursor: none;
+}
+
+*, *::before, *::after { cursor: none !important; }
+
+/* ─── CUSTOM CURSOR ──────────────────────────────────────── */
+
+/* Main cursor: small filled circle with a subtle outer ring */
+.cursor-dot {
+  position: fixed;
+  top: 0; left: 0;
+  width: 8px; height: 8px;
+  background: var(--orange);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+  box-shadow: 0 0 6px rgba(230, 112, 38, 0.6);
+  transition: width 0.15s ease, height 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Outer follower ring — lags behind the dot */
+.cursor-outline {
+  position: fixed;
+  top: 0; left: 0;
+  width: 30px; height: 30px;
+  border: 1.5px solid rgba(230, 112, 38, 0.45);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99998;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+  transition:
+    width 0.22s ease,
+    height 0.22s ease,
+    border-color 0.22s ease,
+    opacity 0.22s ease;
+}
+
+/* Trail particles */
+.cursor-trail {
+  position: fixed;
+  top: 0; left: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99997;
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+  background: var(--orange);
+}
+
+/* ─── CURSOR HOVER STATE ─────────────────────────────────── */
+body.cursor-hover .cursor-dot {
+  width: 6px; height: 6px;
+  background: #f0983a;
+  box-shadow: 0 0 10px rgba(230, 112, 38, 0.8);
+}
+body.cursor-hover .cursor-outline {
+  width: 42px; height: 42px;
+  border-color: rgba(230, 112, 38, 0.7);
+}
+
+/* ─── CURSOR CLICK STATE ─────────────────────────────────── */
+body.cursor-click .cursor-dot {
+  width: 12px; height: 12px;
+  box-shadow: 0 0 14px rgba(230, 112, 38, 0.9);
+}
+body.cursor-click .cursor-outline {
+  width: 20px; height: 20px;
+  border-color: rgba(230, 112, 38, 0.9);
+  opacity: 0.5;
 }
 
 /* ─── SCROLLBAR ──────────────────────────────────────────── */

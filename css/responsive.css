@@ -1,269 +1,255 @@
 /* ═══════════════════════════════════════════════════════════
    POWERSTEEL – responsive.css
-   Media queries: tablet (≤768px) and mobile (≤480px)
+   Media queries: tablet (≤900px), mobile (≤600px), xs (≤380px)
    ═══════════════════════════════════════════════════════════ */
 
-/* ─── TABLET (≤768px) ────────────────────────────────────── */
-@media (max-width: 768px) {
+/* ─── TABLET (≤900px) ────────────────────────────────────── */
+@media (max-width: 900px) {
 
-  /* Landing */
-  .hero-logo-img img { width: clamp(200px, 80vw, 400px); }
+  .hero-logo-img img { width: clamp(220px, 70vw, 420px); }
 
-  .hero-headline {
-    font-size: clamp(0.85rem, 3vw, 1.1rem);
-    padding: 0 1rem;
-  }
+  .dash-header { padding: 0.65rem 1.25rem; gap: 0.6rem; }
+  .dash-header-right { gap: 0.5rem; }
+  .dash-logo-img img { height: 28px; }
+  .dash-meta { max-width: 260px; font-size: 0.58rem; }
 
-  .upload-zone {
-    width: min(420px, 92vw);
-    padding: 2rem 1.5rem;
-  }
+  .dash-body { padding: 2rem 1.25rem; }
 
-  /* Dash header */
-  .dash-header {
-    padding: 0.6rem 1rem;
-    gap: 0.5rem;
-  }
-
-  .dash-header-right { gap: 0.45rem; }
-
-  .dash-logo-img img { height: 26px; }
-  .dash-meta { max-width: 220px; font-size: 0.56rem; }
-
-  /* Dash body */
-  .dash-body { padding: 1.5rem 1rem; }
-
-  /* KPI grid */
   .kpi-grid {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.1rem;
   }
 
-  /* Charts */
-  .charts-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
+  .charts-grid { grid-template-columns: 1fr; gap: 1.2rem; }
   .chart-card.wide { grid-column: span 1; }
 
-  /* Source grid */
-  .source-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  }
+  .source-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 
-  /* Table */
   .table-scroll { overflow-x: auto; }
 
-  /* Present view */
   .pv-body {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: none;
     overflow-y: auto;
   }
-
   .pv-span-2 { grid-column: span 2; }
-  .pv-source-share-card { grid-column: span 2; }
-
   .pv-donut-svg-area { width: 170px; height: 170px; }
   .pv-donut-legend { height: 170px; max-height: 170px; }
-
   .pv-kpi-strip { overflow-x: auto; }
   .pv-kpi-item { min-width: 80px; }
-
   .pv-header { padding: 0.5rem 1rem; }
   .pv-title { display: none; }
 }
 
-/* ─── MOBILE (≤480px) ────────────────────────────────────── */
-@media (max-width: 480px) {
+/* ─── MOBILE (≤600px) ────────────────────────────────────── */
+@media (max-width: 600px) {
 
-  /* Landing */
-  .hero-content { padding: 1.2rem 1rem; }
-  .hero-logo-img img { width: min(260px, 88vw); }
-  .brand-tag { font-size: 0.6rem; letter-spacing: 0.25em; }
+  /* ── Landing ── */
+  .hero-content { padding: 1.5rem 1.1rem 2rem; gap: 0; }
+  .hero-logo-img img { width: min(280px, 82vw); }
+  .brand-tag { font-size: 0.62rem; letter-spacing: 0.28em; margin-bottom: 1.2rem; }
 
-  .hero-headline {
-    font-size: 0.85rem;
-    margin-bottom: 2rem;
+  .upload-card {
+    width: min(96vw, 480px);
+    border-radius: 16px;
+    margin-bottom: 1.4rem;
   }
 
-  .upload-zone {
-    width: 92vw;
-    padding: 1.5rem 1rem;
-  }
+  .upload-tab { padding: 0.75rem 0.6rem; font-size: 0.62rem; letter-spacing: 0.1em; gap: 0.35rem; }
+  .upload-tab svg { width: 13px; height: 13px; }
+  .tab-live-badge { font-size: 0.45rem; padding: 0.12rem 0.38rem; }
 
+  .upload-panel { padding: 1.6rem 1.4rem; min-height: 260px; }
+
+  .upload-zone { padding: 1.4rem 1.2rem; }
   .upload-zone h3 { font-size: 1rem; }
-  .upload-zone p  { font-size: 0.75rem; }
+  .upload-zone p  { font-size: 0.76rem; margin-bottom: 1.1rem; }
+  .upload-icon { width: 54px; height: 54px; margin-bottom: 0.85rem; }
+  .upload-icon svg { width: 24px; height: 24px; }
 
-  .mode-toggle { top: 0.75rem; right: 0.75rem; padding: 0.3rem 0.7rem; }
+  .upload-btn { padding: 0.75rem 2rem; font-size: 0.76rem; }
+
+  .gsheet-panel-inner h3 { font-size: 1rem; }
+  .gsheet-panel-inner p  { font-size: 0.74rem; margin-bottom: 1rem; }
+  .gsheet-icon-large { width: 52px; height: 52px; margin-bottom: 0.85rem; }
+  .gsheet-input-row { gap: 0.5rem; }
+  .gsheet-input { padding: 0.65rem 0.8rem; font-size: 0.7rem; }
+  .gsheet-connect-btn { padding: 0 1rem; font-size: 0.65rem; }
+  .gsheet-help { font-size: 0.6rem; }
+
+  .mode-toggle { top: 0.75rem; right: 0.75rem; padding: 0.3rem 0.65rem; }
   .mode-toggle .toggle-label { display: none; }
 
-  /* Dash header */
-  .dash-header { padding: 0.6rem 0.75rem; gap: 0.4rem; }
+  .history-trigger-btn { font-size: 0.62rem; padding: 0.45rem 1rem 0.45rem 0.8rem; }
+
+  /* ── Dash Header ── */
+  .dash-header {
+    padding: 0.55rem 0.9rem;
+    gap: 0.4rem;
+    min-height: 54px;
+  }
   .dash-logo-img img { height: 22px; }
   .dash-meta { display: none; }
-  .dash-header-right { gap: 0.35rem; }
+  .dash-header-right { gap: 0.35rem; flex-wrap: nowrap; }
 
-  .present-btn span,
-  .back-btn { font-size: 0.6rem; padding: 0.4rem 0.7rem; letter-spacing: 0.08em; }
+  .back-btn {
+    font-size: 0.6rem;
+    padding: 0.4rem 0.75rem;
+    letter-spacing: 0.08em;
+  }
+  .present-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    gap: 0.35rem;
+  }
+  .present-btn svg { width: 12px; height: 12px; }
 
-  .present-btn { padding: 0.4rem 0.7rem; }
-  .present-btn svg { width: 14px; height: 14px; }
+  .sync-indicator { padding: 0.3rem 0.6rem; font-size: 0.56rem; gap: 0.35rem; }
+  .sync-countdown { display: none; }
+  .mode-toggle-inline .toggle-label { display: none; }
+  .mode-toggle-inline { padding: 0.35rem 0.6rem; }
 
-  /* Dash body */
-  .dash-body { padding: 1rem 0.75rem; }
-  .section-title { font-size: 1.3rem; }
-  .section-title .tag { font-size: 0.6rem; padding: 0.15rem 0.5rem; }
+  /* ── Stats strip ── */
+  .stats-strip { padding: 1rem 0; }
+  .stat-item .val { font-size: 1.3rem; }
+  .stat-item .lbl { font-size: 0.52rem; }
+  .stat-item { padding: 0 1rem; }
 
-  /* File banner */
-  .file-banner { padding: 0.8rem 1rem; }
-  .file-banner-text h4 { font-size: 0.8rem; }
+  /* ── Dash body ── */
+  .dash-body { padding: 1.4rem 0.9rem 2.5rem; }
+
+  .section-title { font-size: 1.45rem; margin-bottom: 1.1rem; }
+  .section-title .tag { font-size: 0.6rem; padding: 0.18rem 0.55rem; }
+
+  .file-banner { padding: 0.9rem 1.1rem; margin-bottom: 2rem; gap: 0.75rem; }
+  .file-banner svg { width: 20px; height: 20px; }
+  .file-banner-text h4 { font-size: 0.82rem; }
   .file-banner-text p  { font-size: 0.68rem; }
 
-  /* KPI grid */
+  /* ── KPI: 2-column comfortable ── */
   .kpi-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    margin-bottom: 2rem;
+    gap: 0.85rem;
+    margin-bottom: 2.2rem;
   }
+  .kpi-card { padding: 1.1rem 1rem; }
+  .kpi-label { font-size: 0.6rem; letter-spacing: 0.12em; margin-bottom: 0.5rem; }
+  .kpi-value { font-size: 2rem; }
+  .kpi-sub   { font-size: 0.68rem; }
 
-  .kpi-card { padding: 1rem; }
-  .kpi-value { font-size: 1.8rem; }
-  .kpi-label { font-size: 0.6rem; }
-  .kpi-sub   { font-size: 0.65rem; }
+  /* ── Charts ── */
+  .charts-grid { gap: 0.85rem; margin-bottom: 2.2rem; }
+  .chart-card { padding: 1.1rem; }
+  .chart-card h4 { font-size: 0.72rem; margin-bottom: 1rem; }
+  .chart-card canvas { max-height: 230px; }
 
-  /* Charts */
-  .charts-grid { gap: 0.75rem; margin-bottom: 2rem; }
-  .chart-card { padding: 1rem; }
-  .chart-card h4 { font-size: 0.7rem; }
-  .chart-card canvas { max-height: 220px; }
-
-  /* Donut: stack vertically */
-  #donutCard .donut-chart-wrap {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .donut-svg-area { width: 160px; height: 160px; }
-
-  .donut-legend {
-    max-height: 140px;
-    width: 100%;
-  }
-
-  /* Source grid */
-  .source-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.6rem;
-    margin-bottom: 2rem;
-  }
-
-  .source-card { padding: 0.75rem; }
-  .source-card .src-val { font-size: 1.4rem; }
-
-  /* Rep table */
-  .table-wrap { border-radius: 10px; }
-  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { font-size: 0.72rem; min-width: 360px; }
-
-  /* History drawer */
-  .history-drawer { bottom: 0; }
-  .history-drawer-tab { padding: 0.6rem 1rem; font-size: 0.65rem; }
-
-  /* Stats strip */
-  .stats-strip { padding: 0; }
-  .stat-item .val { font-size: 1.1rem; }
-  .stat-item .lbl { font-size: 0.5rem; }
-
-  /* Present view */
-  .pv-body {
-    grid-template-columns: 1fr;
-    grid-template-rows: none;
-    overflow-y: auto;
-    height: auto;
-  }
-
-  .pv-span-2 { grid-column: span 1; }
-  .pv-source-share-card { grid-column: span 1; }
-
-  .pv-card { min-height: 280px; height: auto; }
-
-  .pv-card canvas {
-    min-height: 200px;
-    max-height: 240px;
-  }
-
-  .pv-kpi-strip {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .pv-kpi-item { min-width: 72px; }
-  .pv-kpi-val  { font-size: 1.1rem; }
-  .pv-kpi-lbl  { font-size: 0.45rem; }
-
-  /* Present header: hide logo on smallest screens */
-  .pv-header { gap: 0.5rem; justify-content: flex-end; }
-  .pv-logo-img, .pv-logo { display: none !important; }
-
-  .pv-exit-btn {
-    padding: 0.55rem 1rem;
-    font-size: 0.68rem;
-    min-height: 36px;
-    min-width: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Donut in present view */
-  .pv-source-share-card { min-height: 220px; height: auto; }
-
-  .pv-donut-wrap {
-    flex: unset;
+  /* Donut: side-by-side, sized down */
+  .donut-chart-wrap {
     flex-direction: row;
     align-items: center;
     gap: 0.8rem;
-    overflow: hidden;
-    height: 180px;
+    min-height: 180px;
   }
+  .donut-svg-area { flex: 0 0 150px; width: 150px; height: 150px; }
+  .donut-legend { max-height: 180px; }
+  .legend-name  { font-size: 0.6rem; }
+  .legend-pct   { font-size: 0.82rem; }
+  .legend-count { font-size: 0.54rem; }
 
-  .pv-donut-svg-area {
-    width: 170px;
-    height: 170px;
-    flex-shrink: 0;
+  /* ── Source grid: 2 columns ── */
+  .source-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.7rem;
+    margin-bottom: 2.2rem;
   }
+  .source-card { padding: 0.9rem 0.85rem; }
+  .source-card .src-name { font-size: 0.62rem; }
+  .source-card .src-val  { font-size: 1.5rem; }
+  .source-card .src-sub  { font-size: 0.56rem; }
+  .source-card .src-avg  { font-size: 0.54rem; }
 
-  .pv-donut-legend {
-    flex: 1;
-    height: 170px;
-    max-height: 170px;
-    min-width: 0;
+  /* ── Rep table ── */
+  .table-wrap { border-radius: 10px; margin-bottom: 2.2rem; }
+  .table-header { padding: 0.85rem 1.1rem; }
+  .table-header h4 { font-size: 0.72rem; }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { font-size: 0.73rem; min-width: 340px; }
+  thead th { padding: 0.7rem 1rem; font-size: 0.64rem; }
+  tbody td { padding: 0.65rem 1rem; }
+
+  /* ── History drawer ── */
+  .history-drawer-tab { padding: 0.55rem 1.1rem; font-size: 0.62rem; }
+
+  /* ── Present view ── */
+  .pv-body {
+    grid-template-columns: 1fr 1fr;
+    overflow-y: auto;
   }
+  .pv-span-2 { grid-column: span 2; }
+  .pv-kpi-strip { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .pv-kpi-item { min-width: 74px; padding: 0.4rem 0.4rem; }
+  .pv-kpi-val  { font-size: 1.2rem; }
+  .pv-kpi-lbl  { font-size: 0.46rem; }
+  .pv-header { padding: 0.45rem 0.9rem; }
+  .pv-title { display: none; }
+  .pv-exit-btn { padding: 0.4rem 0.85rem; font-size: 0.62rem; }
 
-  /* Rep table card */
-  .pv-card:has(.pv-table-scroll) {
-    height: 420px;
-    min-height: 420px;
-  }
-
-  .pv-table-scroll { height: 360px; }
-
-  /* History modal: sheet from bottom */
+  /* History modal: bottom sheet */
   .history-modal {
-    width: 94vw;
-    max-height: 80vh;
+    width: 96vw;
+    max-height: 78vh;
     border-radius: 16px 16px 0 0;
-    bottom: 0;
     top: auto;
-    transform: translateY(100%);
+    bottom: 0;
     left: 50%;
-    margin-left: -47vw;
+    transform: translateX(-50%) translateY(100%);
   }
+  .history-modal.open { transform: translateX(-50%) translateY(0); }
 
-  .history-modal.open { transform: translateY(0); }
-
-  /* Scroll cue */
   .scroll-cue { display: none; }
+}
+
+/* ─── EXTRA SMALL (≤380px) ───────────────────────────────── */
+@media (max-width: 380px) {
+
+  .upload-card { width: 100vw; border-radius: 0; }
+  .upload-panel { padding: 1.3rem 1rem; }
+
+  /* Header: icon-only buttons */
+  .back-btn { font-size: 0.58rem; padding: 0.38rem 0.6rem; }
+  .present-btn { padding: 0.38rem 0.6rem; }
+  .present-btn span { display: none; }
+  .present-btn svg { width: 15px; height: 15px; }
+
+  .kpi-grid { gap: 0.6rem; }
+  .kpi-card { padding: 0.9rem 0.8rem; }
+  .kpi-value { font-size: 1.75rem; }
+
+  /* Donut: stack vertically on very small screens */
+  .donut-chart-wrap {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: unset;
+  }
+  .donut-svg-area { flex: none; width: 160px; height: 160px; }
+  .donut-legend { max-height: 130px; width: 100%; }
+
+  .source-grid { gap: 0.5rem; }
+  .source-card { padding: 0.75rem 0.7rem; }
+  .source-card .src-val { font-size: 1.3rem; }
+
+  table { font-size: 0.68rem; }
+  thead th { padding: 0.6rem 0.75rem; }
+  tbody td { padding: 0.55rem 0.75rem; }
+
+  /* Present view: single column */
+  .pv-body { grid-template-columns: 1fr; }
+  .pv-span-2 { grid-column: span 1; }
+  .pv-card { min-height: 240px; }
+  .pv-kpi-val { font-size: 1rem; }
+  .pv-kpi-lbl { font-size: 0.4rem; }
+
+  .history-modal { width: 100vw; border-radius: 14px 14px 0 0; }
 }

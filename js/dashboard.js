@@ -598,11 +598,9 @@ window._activeMonthIdx = -1;  // -1 = combined view
 function renderMonthSelector(monthDataArr, activeIdx) {
   let sel = document.getElementById('monthSelectorWrap');
   if (!sel) {
-    // Create the wrapper and inject into dash-header controls area
     sel = document.createElement('div');
     sel.id = 'monthSelectorWrap';
-    sel.style.cssText = 'display:flex;align-items:center;gap:0.5rem;';
-    // Insert before the mode toggle inline button
+    sel.style.cssText = 'display:flex;align-items:center;gap:0.5rem;flex-shrink:0;';
     const headerControls = document.querySelector('.dash-header > div:last-child');
     if (headerControls) headerControls.insertBefore(sel, headerControls.firstChild);
   }
@@ -614,11 +612,10 @@ function renderMonthSelector(monthDataArr, activeIdx) {
 
   sel.style.display = 'flex';
   sel.innerHTML = `
-    <label style="font-family:'Montserrat',sans-serif;font-size:0.62rem;font-weight:700;
-                  letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">
+    <label class="month-selector-label" style="font-family:'Montserrat',sans-serif;font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap;">
       Period
     </label>
-    <select id="monthSelector" onchange="onMonthSelect(this.value)"
+    <select id="monthSelector" class="month-selector-select" onchange="onMonthSelect(this.value)"
       style="background:var(--bg-card);border:1px solid var(--border-orange);
              color:var(--text-primary);font-family:'Montserrat',sans-serif;
              font-size:0.7rem;font-weight:600;letter-spacing:0.05em;
@@ -627,7 +624,7 @@ function renderMonthSelector(monthDataArr, activeIdx) {
              appearance:none;-webkit-appearance:none;
              background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23e67026' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E\");
              background-repeat:no-repeat;background-position:right 0.6rem center;
-             padding-right:1.8rem;">
+             padding-right:1.8rem;max-width:180px;">
       <option value="-1" ${activeIdx === -1 ? 'selected' : ''}>All Months (Combined)</option>
       ${monthDataArr.map((md, i) => `
         <option value="${i}" ${activeIdx === i ? 'selected' : ''}>${md.label}</option>

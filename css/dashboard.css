@@ -22,12 +22,14 @@
   z-index: 100;
   background: var(--bg-header);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-orange);
   padding: 0.75rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;          /* allows two-row layout on narrow screens */
   transition: background 0.4s ease;
   min-height: 64px;
 }
@@ -47,7 +49,6 @@
   gap: 0.65rem;
   flex-shrink: 0;
   flex-wrap: nowrap;
-  overflow: visible;
 }
 
 .dash-logo-img img {
@@ -95,6 +96,118 @@
 .back-btn:hover {
   background: var(--orange);
   color: #fafafa;
+}
+
+/* ─── HEADER RESPONSIVE: TWO-ROW WRAP (≤860px) ───────────── */
+/*
+  When the row gets tight, the header wraps gracefully:
+    Row 1  → logo + meta  (full width, left-aligned)
+    Row 2  → all controls (full width, right-aligned)
+  A hairline divider between rows keeps it looking intentional.
+*/
+@media (max-width: 860px) {
+
+  .dash-header {
+    padding: 0.7rem 1.4rem 0.65rem;
+    gap: 0;
+    row-gap: 0;
+    align-items: stretch;
+  }
+
+  /* Row 1 — logo + meta, full width */
+  .dash-header-left {
+    flex: 1 1 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid var(--border-orange);
+    margin-bottom: 0.6rem;
+  }
+
+  .dash-logo-img img { height: 28px; }
+
+  .dash-meta {
+    font-size: 0.57rem;
+    max-width: none;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Row 2 — controls, full width, right-aligned */
+  .dash-header-right {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+/* ─── HEADER RESPONSIVE: COMPACT CONTROLS (≤540px) ──────── */
+@media (max-width: 540px) {
+
+  .dash-header {
+    padding: 0.6rem 1rem 0.55rem;
+  }
+
+  .dash-header-left {
+    gap: 0.75rem;
+    padding-bottom: 0.48rem;
+    margin-bottom: 0.52rem;
+  }
+
+  .dash-logo-img img { height: 22px; }
+  .dash-meta { font-size: 0.51rem; letter-spacing: 0.07em; }
+
+  .dash-header-right { gap: 0.32rem; }
+
+  /* Sync pill: dot only, show countdown */
+  .sync-indicator {
+    padding: 0.28rem 0.55rem;
+    font-size: 0.54rem;
+    gap: 0.3rem;
+  }
+  .sync-label-default { display: none; }
+  .sync-countdown { display: inline; font-size: 0.52rem; min-width: 18px; }
+
+  /* Mode toggle: icon only */
+  .mode-toggle-inline { padding: 0.32rem 0.55rem; gap: 0.3rem; }
+  .mode-toggle-inline .toggle-label { display: none; }
+  .mode-toggle-inline .toggle-icon  { font-size: 0.9rem; }
+
+  /* Present */
+  .present-btn {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.07em;
+    gap: 0.28rem;
+  }
+  .present-btn svg { width: 11px; height: 11px; }
+
+  /* Back */
+  .back-btn {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.07em;
+  }
+}
+
+/* ─── HEADER RESPONSIVE: EXTRA SMALL (≤380px) ───────────── */
+@media (max-width: 380px) {
+
+  .dash-header { padding: 0.55rem 0.8rem 0.5rem; }
+
+  .dash-logo-img img { height: 20px; }
+  .dash-meta { display: none; }   /* logo alone is enough at this size */
+  .dash-header-left { padding-bottom: 0.4rem; margin-bottom: 0.44rem; }
+
+  /* Icon-only buttons */
+  .present-btn span { display: none; }
+  .present-btn { padding: 0.33rem 0.6rem; }
+  .present-btn svg { width: 14px; height: 14px; }
+
+  .back-btn { font-size: 0; padding: 0.33rem 0.6rem; }
+  .back-btn::before { content: '↑'; font-size: 0.85rem; font-family: system-ui; }
 }
 
 /* ─── DASHBOARD BODY ─────────────────────────────────────── */

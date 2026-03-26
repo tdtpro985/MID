@@ -281,6 +281,10 @@ function startSyncLoop() {
 function stopSyncLoop() {
   if (_syncInterval)  { clearInterval(_syncInterval);  _syncInterval  = null; }
   if (_syncCountdown) { clearInterval(_syncCountdown); _syncCountdown = null; }
+  var indicator = document.getElementById('syncIndicator');
+  if (indicator) indicator.classList.remove('active');
+  var dot = document.getElementById('syncDot');
+  if (dot) dot.className = 'sync-dot';
 }
 
 function _updateCountdown() {

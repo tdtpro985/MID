@@ -234,6 +234,16 @@ function toggleHistoryDrawer() {
 let charts = {};
 
 function processFile(file) {
+  // If a Google Sheet sync loop is running, stop it before switching to a CSV upload
+  if (typeof stopSyncLoop === 'function') stopSyncLoop();
+  if (typeof _syncPubUrl !== 'undefined') {
+    window._syncPubUrl  = null;
+    window._syncSheetId = null;
+    window._syncLabel   = null;
+  }
+  const syncIndicator = document.getElementById('syncIndicator');
+  if (syncIndicator) syncIndicator.classList.remove('active');
+
   document.getElementById('loadingOverlay').classList.add('show');
   const lt = document.getElementById('loadingText');
   if (lt) lt.textContent = 'Processing Data…';

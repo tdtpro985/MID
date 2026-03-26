@@ -26,6 +26,159 @@
 <link rel="stylesheet" href="css/data-preview.css">
 
 <style>
+/* ═══════════════════════════════════════════════════════════
+   INTRO SPLASH
+   ═══════════════════════════════════════════════════════════ */
+#introSplash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #0a0908;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1), transform 0.7s cubic-bezier(0.4,0,0.2,1);
+}
+#introSplash.intro-hiding { opacity: 0; transform: scale(1.04); pointer-events: none; }
+#introSplash.intro-gone   { display: none; }
+.intro-bg-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(230,112,38,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(230,112,38,0.07) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: introGridPulse 6s ease-in-out infinite;
+}
+@keyframes introGridPulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+.intro-particle {
+  position: absolute; border-radius: 50%;
+  background: #e67026; pointer-events: none;
+  animation: introParticleFloat linear infinite;
+}
+@keyframes introParticleFloat {
+  0%   { transform:translateY(110vh) scale(0); opacity:0; }
+  8%   { opacity:1; transform:translateY(90vh) scale(1); }
+  92%  { opacity:1; }
+  100% { transform:translateY(-15vh) scale(0.4); opacity:0; }
+}
+.intro-glow-ring {
+  position: absolute; border-radius: 50%;
+  border: 1px solid rgba(230,112,38,0.18);
+  animation: introRingPulse 4s ease-in-out infinite;
+  pointer-events: none;
+  width: 500px; height: 500px;
+  left: 50%; top: 50%;
+  transform: translate(-50%,-50%) scale(0.8);
+}
+.intro-glow-ring-2 { width:700px;height:700px;border-color:rgba(230,112,38,.10);animation-delay:.8s; }
+.intro-glow-ring-3 { width:920px;height:920px;border-color:rgba(230,112,38,.06);animation-delay:1.6s; }
+@keyframes introRingPulse {
+  0%,100%{transform:translate(-50%,-50%) scale(.85);opacity:.6}
+  50%    {transform:translate(-50%,-50%) scale(1.05);opacity:1}
+}
+.intro-content {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0; text-align: center; padding: 2rem;
+}
+.intro-eyebrow {
+  font-family:'Montserrat',sans-serif; font-size:.68rem; font-weight:700;
+  letter-spacing:.45em; text-transform:uppercase; color:#e67026;
+  margin-bottom:2rem; opacity:0;
+  animation: introFadeUp .7s ease forwards .3s;
+}
+.intro-logo-wrap {
+  position:relative; display:flex; align-items:center; justify-content:center;
+  margin-bottom:1.6rem; opacity:0;
+  animation: introFadeUp .9s cubic-bezier(.34,1.3,.64,1) forwards .55s;
+}
+.intro-logo-glow {
+  position:absolute; inset:-40px;
+  background: radial-gradient(ellipse 85% 65% at 50% 50%,
+    rgba(230,112,38,.55) 0%, rgba(230,112,38,.22) 40%, transparent 70%);
+  filter: blur(28px);
+  animation: introGlowPulse 3s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes introGlowPulse {
+  0%,100%{opacity:.7;transform:scale(.95)}
+  50%    {opacity:1; transform:scale(1.08)}
+}
+.intro-logo-img {
+  width: clamp(260px,48vw,580px); height:auto;
+  position:relative; z-index:1;
+  filter: drop-shadow(0 0 32px rgba(230,112,38,.6)) drop-shadow(0 0 80px rgba(230,112,38,.25));
+  animation: introLogoShimmer 4s ease-in-out infinite 1.5s;
+}
+@keyframes introLogoShimmer {
+  0%,100%{filter:drop-shadow(0 0 28px rgba(230,112,38,.55)) drop-shadow(0 0 70px rgba(230,112,38,.22))}
+  50%    {filter:drop-shadow(0 0 48px rgba(230,112,38,.85)) drop-shadow(0 0 110px rgba(230,112,38,.40))}
+}
+.intro-logo-fallback {
+  font-family:'Bebas Neue',sans-serif; font-size:clamp(3rem,10vw,7rem);
+  display:none; position:relative; z-index:1;
+  filter:drop-shadow(0 0 40px rgba(230,112,38,.7));
+}
+.ilf-power{color:#e67026} .ilf-steel{color:#fafafa;letter-spacing:.05em}
+.intro-tagline {
+  display:flex; align-items:center; gap:1rem;
+  margin-bottom:.9rem; opacity:0;
+  animation: introFadeUp .7s ease forwards 1s;
+}
+.intro-tagline-line { flex:1; height:1px; width:60px; background:linear-gradient(90deg,transparent,rgba(230,112,38,.5)); }
+.intro-tagline-line:last-child { background:linear-gradient(90deg,rgba(230,112,38,.5),transparent); }
+.intro-tagline-text {
+  font-family:'Montserrat',sans-serif; font-size:.62rem; font-weight:700;
+  letter-spacing:.35em; text-transform:uppercase; color:#a6a6a8; white-space:nowrap;
+}
+.intro-subtitle {
+  font-family:'Montserrat',sans-serif; font-size:.78rem; font-weight:400;
+  color:#7d7d80; letter-spacing:.08em; margin-bottom:2.4rem; opacity:0;
+  animation: introFadeUp .7s ease forwards 1.15s;
+}
+.intro-bar-loader {
+  width:clamp(200px,36vw,380px); height:3px;
+  background:rgba(113,112,116,.2); border-radius:2px;
+  overflow:hidden; position:relative; margin-bottom:.7rem; opacity:0;
+  animation: introFadeUp .5s ease forwards 1.3s;
+}
+.intro-bar-fill {
+  height:100%; width:0%;
+  background:linear-gradient(90deg,#e67026,#f0983a,#e15716);
+  border-radius:2px; transition:width .25s ease;
+}
+.intro-bar-sheen {
+  position:absolute; top:0; bottom:0; width:60px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);
+  animation:introSheen 1.8s ease-in-out infinite;
+}
+@keyframes introSheen { 0%{left:-60px} 100%{left:calc(100% + 60px)} }
+.intro-loading-text {
+  font-family:'Montserrat',sans-serif; font-size:.6rem; font-weight:600;
+  letter-spacing:.25em; text-transform:uppercase; color:#7d7d80; opacity:0;
+  animation: introFadeUp .5s ease forwards 1.4s;
+  transition: opacity .3s;
+}
+.intro-skip-btn {
+  position:absolute; bottom:2rem; right:2rem; z-index:3;
+  display:flex; align-items:center; gap:.45rem;
+  background:rgba(36,36,35,.6); border:1px solid rgba(230,112,38,.25);
+  border-radius:50px; padding:.5rem 1.1rem .5rem 1.2rem;
+  color:#7d7d80; font-family:'Montserrat',sans-serif; font-size:.62rem;
+  font-weight:700; letter-spacing:.18em; text-transform:uppercase;
+  cursor:pointer; backdrop-filter:blur(12px);
+  transition:all .25s ease; opacity:0;
+  animation: introFadeUp .5s ease forwards 1.6s;
+}
+.intro-skip-btn svg { width:14px;height:14px;fill:currentColor;flex-shrink:0;transition:transform .25s ease; }
+.intro-skip-btn:hover {
+  border-color:#e67026; color:#e67026; background:rgba(230,112,38,.1);
+  transform:translateY(-1px); box-shadow:0 6px 20px rgba(230,112,38,.2);
+}
+.intro-skip-btn:hover svg { transform:translateX(3px); }
+@keyframes introFadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+
 /* ─── GOOGLE SHEETS SYNC UI ──────────────────────────────── */
 .sync-indicator {
   display: none;
@@ -141,6 +294,47 @@ body.light-mode .gsheet-input { background:rgba(255,255,255,0.5); }
 </style>
 </head>
 <body>
+
+<!-- ═══ INTRO SPLASH ═══ -->
+<div id="introSplash">
+  <div class="intro-bg-grid"></div>
+  <div class="intro-particles" id="introParticles"></div>
+
+  <div class="intro-glow-ring"></div>
+  <div class="intro-glow-ring intro-glow-ring-2"></div>
+  <div class="intro-glow-ring intro-glow-ring-3"></div>
+
+  <div class="intro-content">
+    <div class="intro-eyebrow">Marketing Intelligence Platform</div>
+
+    <div class="intro-logo-wrap">
+      <div class="intro-logo-glow"></div>
+      <img class="intro-logo-img" src="assets/logo.png" alt="TDT POWERSTEEL"
+           onerror="this.style.display='none';document.getElementById('introLogoFallback').style.display='block'">
+      <div class="intro-logo-fallback" id="introLogoFallback">
+        <span class="ilf-power">POWER</span><span class="ilf-steel">STEEL</span>
+      </div>
+    </div>
+
+    <div class="intro-tagline">
+      <span class="intro-tagline-line"></span>
+      <span class="intro-tagline-text">THE NO. 1 STEEL SUPPLIER</span>
+      <span class="intro-tagline-line"></span>
+    </div>
+
+    <div class="intro-subtitle">Intelligent lead tracking &amp; sales analytics</div>
+
+    <div class="intro-bar-loader">
+      <div class="intro-bar-fill" id="introBarFill"></div>
+      <div class="intro-bar-sheen"></div>
+    </div>
+    <div class="intro-loading-text" id="introLoadingText">Initializing…</div>
+  </div>
+
+  <button class="intro-skip-btn" id="introSkipBtn" onclick="skipIntro()">
+    Skip <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z"/></svg>
+  </button>
+</div>
 
 <!-- Dark/Light Mode Toggle (floating, landing only) -->
 <button class="mode-toggle" id="modeToggle" onclick="toggleMode()">
@@ -768,6 +962,115 @@ function switchTab(tab) {
   } else {
     init();
   }
+
+})();
+</script>
+
+<!-- ═══ INTRO SPLASH JS ═══ -->
+<script>
+(function() {
+  'use strict';
+
+  var INTRO_KEY      = 'ps_intro_seen';
+  var DURATION_MS    = 3800;   // auto-dismiss after this many ms
+  var splash         = document.getElementById('introSplash');
+  var barFill        = document.getElementById('introBarFill');
+  var loadingText    = document.getElementById('introLoadingText');
+  var skipBtn        = document.getElementById('introSkipBtn');
+  var dismissed      = false;
+  var rafId          = null;
+  var startTime      = null;
+
+  var loadingPhrases = [
+    'Initializing…',
+    'Loading assets…',
+    'Calibrating data…',
+    'Ready.',
+  ];
+
+  // ── Only show once per session ──────────────────────────
+  if (sessionStorage.getItem(INTRO_KEY)) {
+    if (splash) splash.classList.add('intro-gone');
+    return;
+  }
+
+  // ── Spawn floating particles ────────────────────────────
+  var container = document.getElementById('introParticles');
+  if (container) {
+    for (var i = 0; i < 18; i++) {
+      var p = document.createElement('div');
+      p.className = 'intro-particle';
+      var size = (2 + Math.random() * 4).toFixed(1);
+      p.style.cssText =
+        'width:' + size + 'px;height:' + size + 'px;' +
+        'left:' + (Math.random() * 100).toFixed(1) + '%;' +
+        'animation-duration:' + (9 + Math.random() * 10).toFixed(1) + 's;' +
+        'animation-delay:-' + (Math.random() * 12).toFixed(1) + 's;' +
+        'opacity:' + (0.15 + Math.random() * 0.25).toFixed(2) + ';';
+      container.appendChild(p);
+    }
+  }
+
+  // ── Progress bar + phrase ticker ───────────────────────
+  function animateBar(ts) {
+    if (!startTime) startTime = ts;
+    var elapsed  = ts - startTime;
+    var progress = Math.min(elapsed / DURATION_MS, 1);
+    // Ease-out: feels like real loading
+    var eased    = 1 - Math.pow(1 - progress, 2.4);
+    if (barFill) barFill.style.width = (eased * 100).toFixed(1) + '%';
+
+    // Update phrase at 25%, 55%, 85%
+    if (loadingText) {
+      var idx = progress < 0.25 ? 0 : progress < 0.55 ? 1 : progress < 0.85 ? 2 : 3;
+      if (loadingText.textContent !== loadingPhrases[idx]) {
+        loadingText.style.opacity = '0';
+        setTimeout(function(phrase) {
+          return function() {
+            if (loadingText) { loadingText.textContent = phrase; loadingText.style.opacity = '1'; }
+          };
+        }(loadingPhrases[idx]), 180);
+      }
+    }
+
+    if (progress < 1 && !dismissed) {
+      rafId = requestAnimationFrame(animateBar);
+    } else if (!dismissed) {
+      dismissIntro();
+    }
+  }
+
+  // ── Dismiss ─────────────────────────────────────────────
+  function dismissIntro() {
+    if (dismissed) return;
+    dismissed = true;
+    cancelAnimationFrame(rafId);
+    sessionStorage.setItem(INTRO_KEY, '1');
+    if (barFill) barFill.style.width = '100%';
+    setTimeout(function() {
+      if (splash) {
+        splash.classList.add('intro-hiding');
+        setTimeout(function() { splash.classList.add('intro-gone'); }, 750);
+      }
+    }, 200);
+  }
+
+  // ── Skip button ─────────────────────────────────────────
+  window.skipIntro = function() { dismissIntro(); };
+  if (skipBtn) skipBtn.addEventListener('click', function() { dismissIntro(); });
+
+  // ── Keyboard: any key skips ──────────────────────────────
+  document.addEventListener('keydown', function handler(e) {
+    if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') {
+      dismissIntro();
+      document.removeEventListener('keydown', handler);
+    }
+  }, { once: false });
+
+  // ── Start animation after a short settle ────────────────
+  setTimeout(function() {
+    requestAnimationFrame(animateBar);
+  }, 400);
 
 })();
 </script>

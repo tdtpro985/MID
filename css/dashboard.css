@@ -23,15 +23,34 @@
   background: var(--bg-header);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-orange);
-  padding: 1rem 2.5rem;
+  padding: 0.75rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   transition: background 0.4s ease;
+  min-height: 64px;
+}
+
+.dash-header-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.dash-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 
 .dash-logo-img img {
-  height: 38px;
+  height: 34px;
   width: auto;
   display: block;
 }
@@ -47,10 +66,14 @@
 
 .dash-meta {
   font-family: 'Montserrat', sans-serif;
-  font-size: 0.72rem;
+  font-size: 0.63rem;
   color: var(--text-secondary);
-  letter-spacing: 0.15em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
 }
 
 .back-btn {

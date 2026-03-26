@@ -21,7 +21,7 @@ var _syncSecsLeft    = 0;
 var _syncSheetId     = null;
 var _syncLabel       = null;
 var _syncPubUrl      = null;   // The exact URL we fetch each time
-var SYNC_INTERVAL_SEC = 30;
+var SYNC_INTERVAL_SEC = 10;
 
 // ─── HOW-TO MODAL ─────────────────────────────────────────────
 function showHowTo() {
@@ -146,14 +146,20 @@ async function connectGoogleSheet() {
 // ─── FETCH WITH FALLBACKS ─────────────────────────────────────
 /**
  * Tries the pub URL directly, then through 3 CORS proxies.
+ * A unique cache-busting timestamp is appended to every URL so
+ * neither the browser nor any proxy serves a stale response.
  * Returns the CSV text string, or throws.
  */
 async function fetchWithFallbacks(pubUrl) {
   var errors = [];
 
+  // Append a unique timestamp so every request bypasses all caches
+  var bust = '_cb=' + Date.now();
+  var bustUrl = pubUrl + (pubUrl.indexOf('?') !== -1 ? '&' : '?') + bust;
+
   // 1. Direct fetch — works if browser doesn't block CORS
   try {
-    var r = await fetch(pubUrl, { method: 'GET', cache: 'no-store', redirect: 'follow' });
+    var r = await fetch(bustUrl, { method: 'GET', cache: 'no-store', redirect: 'follow' });
     if (r.ok) {
       var t = await r.text();
       if (t && !isHtmlPage(t)) return t;
@@ -165,8 +171,9 @@ async function fetchWithFallbacks(pubUrl) {
   } catch (e) { errors.push('direct: ' + e.message); }
 
   // 2. allorigins.win — returns JSON { contents: "..." }
+  // Pass the busted URL so allorigins re-fetches from Google each time
   try {
-    var aoUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(pubUrl);
+    var aoUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(bustUrl);
     var r2 = await fetch(aoUrl, { cache: 'no-store' });
     if (r2.ok) {
       var j = await r2.json();
@@ -180,7 +187,7 @@ async function fetchWithFallbacks(pubUrl) {
 
   // 3. corsproxy.io — plain passthrough
   try {
-    var cpUrl = 'https://corsproxy.io/?' + encodeURIComponent(pubUrl);
+    var cpUrl = 'https://corsproxy.io/?' + encodeURIComponent(bustUrl);
     var r3 = await fetch(cpUrl, { cache: 'no-store' });
     if (r3.ok) {
       var t3 = await r3.text();
@@ -191,9 +198,9 @@ async function fetchWithFallbacks(pubUrl) {
     }
   } catch (e) { errors.push('corsproxy: ' + e.message); }
 
-  // 4. htmldriven cors-anywhere clone
+  // 4. cors-anywhere fallback
   try {
-    var haUrl = 'https://cors-anywhere.herokuapp.com/' + pubUrl;
+    var haUrl = 'https://cors-anywhere.herokuapp.com/' + bustUrl;
     var r4 = await fetch(haUrl, { cache: 'no-store' });
     if (r4.ok) {
       var t4 = await r4.text();
@@ -261,8 +268,11 @@ function startSyncLoop() {
 
   _syncCountdown = setInterval(function() {
     _syncSecsLeft = Math.max(0, _syncSecsLeft - 1);
-    if (_syncSecsLeft === 0) _syncSecsLeft = SYNC_INTERVAL_SEC;
     _updateCountdown();
+    if (_syncSecsLeft === 0) {
+      // Reset counter immediately so display shows next cycle
+      _syncSecsLeft = SYNC_INTERVAL_SEC;
+    }
   }, 1000);
 
   _syncInterval = setInterval(function() { _doSync(); }, SYNC_INTERVAL_SEC * 1000);
@@ -287,7 +297,7 @@ async function _doSync() {
     if (!csvText || isHtmlPage(csvText)) throw new Error('Bad response');
     var rows = Papa.parse(csvText, { skipEmptyLines: false }).data;
     if (!rows || rows.length < 4) throw new Error('Too few rows');
-    buildDashboard(rows, _syncLabel, null, true, true);
+    buildDashboard(rows, _syncLabel, null, true, true); // silent=true preserves scroll & tab
     if (dot) dot.className = 'sync-dot';
     _syncSecsLeft = SYNC_INTERVAL_SEC;
   } catch (e) {
@@ -319,5 +329,9 @@ backToLanding = function() {
   stopSyncLoop();
   _syncSheetId = null;
   _syncPubUrl  = null;
+  _syncLabel   = null;
+  resetConnectBtn();
+  var urlInput = document.getElementById('gsheetUrlInput');
+  if (urlInput) urlInput.value = '';
   _origBackToLanding();
 };

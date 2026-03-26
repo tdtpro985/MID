@@ -295,50 +295,173 @@ function isMarketingLeadsCSV(rows) {
 }
 
 // ─── MULTI-MONTH PARSER ────────────────────────────────────────
+
+const MONTH_NAMES = ['january','february','march','april','may','june',
+                     'july','august','september','october','november','december'];
+const MONTH_ABBR  = ['jan','feb','mar','apr','may','jun',
+                     'jul','aug','sep','oct','nov','dec'];
+
+/**
+ * Tries to parse a cell value as a month-block header in ANY of these formats:
+ *
+ *   Text + year  : "January 2026"  "Jan 2026"  "jan-2026"
+ *   M/YYYY       : "1/2026"  "01/2026"
+ *   M-YYYY       : "1-2026"  "01-2026"
+ *   M/YY         : "1/26"   "01/26"
+ *   M-YY         : "1-26"   "01-26"
+ *   Full dates (auto-detect M/D vs D/M):
+ *     M/D/YYYY or D/M/YYYY  e.g. "1/15/2026" vs "15/1/2026"
+ *     M-D-YYYY or D-M-YYYY  e.g. "1-15-2026" vs "15-1-2026"
+ *     YYYY-M-D or YYYY-D-M  (ISO-ish)
+ *     DD.MM.YYYY or MM.DD.YYYY
+ *
+ * Ambiguous two-number dates (e.g. "1/5/2026") are resolved by:
+ *   - if one part > 12  → that part must be the day
+ *   - if both ≤ 12      → prefer M/D/YYYY (month-first) as default,
+ *                         but also accepts D/M/YYYY when a prior block
+ *                         already established a day-first pattern
+ *
+ * Returns { monthName, monthIndex (0-based), year (4-digit string), label }
+ * or null if the cell is not a month header.
+ */
+function parseMonthHeader(raw, _hintDayFirst) {
+  const s = (raw || '').trim();
+  if (!s) return null;
+
+  // ── 1. Named month: "January 2026" / "Jan 2026" / "jan-2026" ──
+  const namedFull  = s.match(/^([A-Za-z]{3,9})[\s\-\/,]+(\d{2,4})$/);
+  if (namedFull) {
+    const mRaw = namedFull[1].toLowerCase();
+    let   yr   = namedFull[2];
+    const idx  = MONTH_NAMES.findIndex(m => m.startsWith(mRaw)) !== -1
+                   ? MONTH_NAMES.findIndex(m => m.startsWith(mRaw))
+                   : MONTH_ABBR.indexOf(mRaw.slice(0, 3));
+    if (idx === -1) return null;
+    if (yr.length === 2) yr = (parseInt(yr) >= 50 ? '19' : '20') + yr;
+    if (yr.length !== 4) return null;
+    const label = MONTH_NAMES[idx].charAt(0).toUpperCase() + MONTH_NAMES[idx].slice(1) + ' ' + yr;
+    return { monthName: MONTH_NAMES[idx], monthIndex: idx, year: yr, label };
+  }
+
+  // ── 2. YYYY-MM or YYYY/MM (ISO partial) ───────────────────────
+  const isoPartial = s.match(/^(\d{4})[\-\/](\d{1,2})$/);
+  if (isoPartial) {
+    const yr = isoPartial[1];
+    const m  = parseInt(isoPartial[2], 10);
+    if (m < 1 || m > 12) return null;
+    const idx = m - 1;
+    const label = MONTH_NAMES[idx].charAt(0).toUpperCase() + MONTH_NAMES[idx].slice(1) + ' ' + yr;
+    return { monthName: MONTH_NAMES[idx], monthIndex: idx, year: yr, label };
+  }
+
+  // ── 3. M/YYYY or M-YYYY or M/YY or M-YY ──────────────────────
+  const mYear = s.match(/^(\d{1,2})[\-\/](\d{2,4})$/);
+  if (mYear) {
+    const a = parseInt(mYear[1], 10);
+    let   yr = mYear[2];
+    if (yr.length === 2) yr = (parseInt(yr) >= 50 ? '19' : '20') + yr;
+    // Only treat as month-only if first part is 1-12
+    if (a >= 1 && a <= 12 && yr.length === 4) {
+      const idx = a - 1;
+      const label = MONTH_NAMES[idx].charAt(0).toUpperCase() + MONTH_NAMES[idx].slice(1) + ' ' + yr;
+      return { monthName: MONTH_NAMES[idx], monthIndex: idx, year: yr, label };
+    }
+  }
+
+  // ── 4. Full date: two separators → extract month + year ───────
+  // Matches: M/D/YYYY  D/M/YYYY  YYYY/M/D  DD.MM.YYYY  etc.
+  const sep = s.match(/^(\d{1,4})([\-\/\.])(\d{1,2})\2(\d{2,4})$/) ||
+              s.match(/^(\d{1,4})([\-\/\.])(\d{1,4})\2(\d{1,2})$/);
+  if (sep) {
+    let [, a,, b,, c] = [...s.match(/^(\d{1,4})([\-\/\.])(\d{1,4})\2(\d{1,4})$/) || []];
+    if (!a) return null;
+    a = parseInt(a, 10); b = parseInt(b, 10); c = parseInt(c, 10);
+
+    let month, year;
+
+    // ISO-ish: YYYY-MM-DD  (first part ≥ 100 → it's the year)
+    if (a >= 100) {
+      year  = String(a).length === 4 ? String(a) : null;
+      month = (b >= 1 && b <= 12) ? b : null;
+    }
+    // Last part is 4-digit year
+    else if (c >= 100) {
+      year = String(c).length === 2 ? (c >= 50 ? '19' + c : '20' + c) : String(c);
+      // Disambiguate a vs b as month/day
+      if (a > 12 && b <= 12)       month = b;  // a is day → b is month
+      else if (b > 12 && a <= 12)  month = a;  // b is day → a is month
+      else if (_hintDayFirst)       month = b;  // established day-first pattern
+      else                          month = a;  // default: month-first
+    }
+    // Two-digit year at end (rare): e.g. 1/15/26
+    else {
+      year  = (c >= 50 ? '19' : '20') + String(c).padStart(2, '0');
+      if (a > 12 && b <= 12)       month = b;
+      else if (b > 12 && a <= 12)  month = a;
+      else if (_hintDayFirst)       month = b;
+      else                          month = a;
+    }
+
+    if (!month || !year || month < 1 || month > 12 || year.length !== 4) return null;
+    const idx = month - 1;
+    const label = MONTH_NAMES[idx].charAt(0).toUpperCase() + MONTH_NAMES[idx].slice(1) + ' ' + year;
+    return { monthName: MONTH_NAMES[idx], monthIndex: idx, year, label };
+  }
+
+  return null;
+}
+
+/**
+ * Heuristically detects whether a CSV uses day-first dates (DD/MM/…)
+ * by scanning for unambiguous dates where the first part > 12.
+ * Returns true if day-first evidence is found, false otherwise.
+ */
+function detectDayFirstFormat(rows) {
+  for (const row of rows) {
+    const s = (row[0] || '').trim();
+    const m = s.match(/^(\d{1,2})[\-\/\.](\d{1,2})[\-\/\.](\d{2,4})$/);
+    if (m) {
+      const a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+      if (a > 12) return true;   // unambiguous: day is first
+      if (b > 12) return false;  // unambiguous: month is first
+    }
+  }
+  return false; // default to month-first
+}
+
 /**
  * Splits a flat CSV rows array into an array of month-blocks.
- * Each block = { label, month, year, rows[] } where rows[] are
- * the raw CSV rows belonging to that month (starting at the
- * row where "Month YYYY" appears in col 0).
+ * Each block = { label, month, year, rows[] }.
  *
- * Detection strategy:
- *   - Any row whose col[0] matches /^[A-Za-z]+ \d{4}$/ (e.g. "January 2026")
- *     is treated as the start of a new month block.
- *   - Rows before the first such marker are skipped (they are the global header).
- *   - Blank/separator rows between blocks are ignored.
+ * Detection: any row whose col[0] can be parsed as a month/year
+ * in ANY common format (named, numeric M/YYYY, full date M/D/YYYY
+ * or D/M/YYYY, ISO, dot-separated, etc.) starts a new block.
  */
 function parseMonthBlocks(rows) {
-  const MONTH_NAMES = ['january','february','march','april','may','june',
-                       'july','august','september','october','november','december'];
-
-  const blocks = [];
+  const dayFirst = detectDayFirstFormat(rows);
+  const blocks   = [];
   let currentBlock = null;
 
   for (let i = 0; i < rows.length; i++) {
-    const row  = rows[i];
-    const col0 = (row[0] || '').trim();
+    const row    = rows[i];
+    const col0   = (row[0] || '').trim();
+    const parsed = parseMonthHeader(col0, dayFirst);
 
-    // Check if this row starts a new month block
-    const monthMatch = col0.match(/^([A-Za-z]+)\s+(\d{4})$/);
-    if (monthMatch) {
-      const monthName = monthMatch[1].toLowerCase();
-      const year      = monthMatch[2];
-      if (MONTH_NAMES.includes(monthName)) {
-        // Save previous block
-        if (currentBlock) blocks.push(currentBlock);
-        const label = monthMatch[1].charAt(0).toUpperCase() + monthMatch[1].slice(1).toLowerCase() + ' ' + year;
-        currentBlock = { label, month: monthName, year, rows: [row] };
-        continue;
-      }
+    if (parsed) {
+      if (currentBlock) blocks.push(currentBlock);
+      currentBlock = {
+        label: parsed.label,
+        month: parsed.monthName,
+        year:  parsed.year,
+        rows:  [row]
+      };
+      continue;
     }
 
-    // Append to current block if we have one
     if (currentBlock) currentBlock.rows.push(row);
   }
 
-  // Push last block
   if (currentBlock) blocks.push(currentBlock);
-
   return blocks;
 }
 
@@ -367,7 +490,8 @@ function extractMonthData(block) {
     const src = (rows[i][3] || '').trim();
     const cnt = parseInt((rows[i][4] || '').replace(/,/g, ''));
     if (src && src !== 'Grand Total' && src !== 'Source' &&
-        src !== 'JANUARY' && src !== 'COUNTA of Source' &&
+        !MONTH_NAMES.includes(src.toLowerCase()) &&
+        src !== 'COUNTA of Source' &&
         !isNaN(cnt) && cnt > 0) {
       sources.push({ name: src, count: cnt });
     }
@@ -548,12 +672,22 @@ function buildDashboard(rows, fileName, rawRows, isLiveSync, silent) {
   // Store globally for selector switching
   window._allMonthData   = monthDataArr;
   window._activeFileName = fileName;
-  window._activeMonthIdx = monthDataArr.length > 1 ? -1 : 0; // default: combined if multi-month
 
-  // Pick initial view data
+  // On live sync refresh, preserve the currently selected month tab.
+  // Only reset to combined (-1) on the very first load (not a sync).
+  if (!isLiveSync || window._activeMonthIdx === undefined) {
+    window._activeMonthIdx = monthDataArr.length > 1 ? -1 : 0;
+  } else {
+    // Clamp in case the number of months changed
+    if (window._activeMonthIdx >= monthDataArr.length) {
+      window._activeMonthIdx = monthDataArr.length > 1 ? -1 : 0;
+    }
+  }
+
+  // Pick view data based on preserved/initial selection
   const initialData = window._activeMonthIdx === -1
     ? combineMonthData(monthDataArr)
-    : monthDataArr[0];
+    : monthDataArr[window._activeMonthIdx];
 
   renderDashboardForData(initialData, fileName, monthDataArr, isLiveSync, silent);
 
@@ -631,19 +765,53 @@ function renderDashboardForData(md, fileName, allMonthData, isLiveSync, silent) 
     fileDetails:  `${md.reps.length} sales reps · ${md.sources.length} sources`
   };
 
-  // ── Destroy old charts ────────────────────────────────────────
-  Object.values(charts).forEach(c => c.destroy());
-  charts = {};
-  Chart.defaults.color = '#fafafa';
-  Chart.defaults.font  = { family: 'Montserrat', size: 11 };
   const gridColor = 'rgba(113,112,116,0.15)';
-  const tickColor = '#a6a6a8';
+  const tickColor = isLight ? '#5a5856' : '#a6a6a8';
+  const hasCharts = charts.sourceBar && charts.salesBar && charts.repBar;
 
-  // ── Build charts (from charts.js) ─────────────────────────────
-  charts.sourceBar = buildSourceBar(md.sources, gridColor, tickColor);
-  buildDonutChart(md.sources);
-  charts.salesBar  = buildSalesBar(md.cvtSources, gridColor, tickColor);
-  charts.repBar    = buildRepBar(md.reps, gridColor, tickColor);
+  // ── Charts: update in-place on live sync, full rebuild otherwise ──
+  if (isLiveSync && hasCharts) {
+    // Update sourceBar in-place
+    const shortLabels = md.sources.map(s =>
+      s.name.replace('FACEBOOK PAGE','FB Page').replace('FACEBOOK GROUP','FB Group')
+             .replace('GOOGLE/INTERNET','Google').replace('WEBSITE/LIVECHAT','Website')
+    );
+    charts.sourceBar.data.labels = shortLabels;
+    charts.sourceBar.data.datasets[0].data = md.sources.map(s => s.count);
+    charts.sourceBar.data.datasets[0].backgroundColor = md.sources.map((_, i) =>
+      i === 0 ? '#e67026' : `rgba(230,112,38,${Math.max(0.3, 0.9 - i * 0.04)})`
+    );
+    charts.sourceBar.update('none');
+
+    // Update salesBar in-place
+    const validCvt = md.cvtSources.filter(s => s.gs > 0).sort((a,b) => b.gs - a.gs);
+    charts.salesBar.data.labels = validCvt.map(s => s.name);
+    charts.salesBar.data.datasets[0].data = validCvt.map(s => s.gs);
+    charts.salesBar.data.datasets[1].data = validCvt.map(s => s.gk);
+    charts.salesBar.update('none');
+
+    // Update repBar in-place
+    const sortedRepsChart = [...md.reps].sort((a,b) => b.count - a.count);
+    charts.repBar.data.labels = sortedRepsChart.map(r => r.name);
+    charts.repBar.data.datasets[0].data = sortedRepsChart.map(r => r.count);
+    charts.repBar.data.datasets[0].backgroundColor = sortedRepsChart.map((_, i) =>
+      i < Math.max(1, Math.ceil(sortedRepsChart.length * 0.2)) ? '#e67026' : 'rgba(113,112,116,0.5)'
+    );
+    charts.repBar.update('none');
+
+    // Rebuild donut (SVG-based, fast)
+    buildDonutChart(md.sources);
+  } else {
+    // Full rebuild on first load or manual tab switch
+    Object.values(charts).forEach(c => c.destroy());
+    charts = {};
+    Chart.defaults.color = tickColor;
+    Chart.defaults.font  = { family: 'Montserrat', size: 11 };
+    charts.sourceBar = buildSourceBar(md.sources, gridColor, tickColor);
+    buildDonutChart(md.sources);
+    charts.salesBar  = buildSalesBar(md.cvtSources, gridColor, tickColor);
+    charts.repBar    = buildRepBar(md.reps, gridColor, tickColor);
+  }
 
   // ── Source Cards ──────────────────────────────────────────────
   const maxCount = Math.max(...md.sources.map(s => s.count), 1);
@@ -652,7 +820,7 @@ function renderDashboardForData(md, fileName, allMonthData, isLiveSync, silent) 
   [...md.sources].sort((a,b) => b.count - a.count).forEach((s, i) => {
     const card = document.createElement('div');
     card.className = 'source-card';
-    card.style.animationDelay = (i * 0.05) + 's';
+    card.style.animationDelay = isLiveSync ? '0s' : (i * 0.05) + 's';
     const pctW = Math.round((s.count / maxCount) * 100);
     card.innerHTML = `
       <div class="src-name">${s.name}</div>

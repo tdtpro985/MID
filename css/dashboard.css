@@ -29,10 +29,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;          /* allows two-row layout on narrow screens */
   transition: background 0.4s ease;
   min-height: 64px;
-  /* No overflow hidden — let contents breathe */
-  overflow: visible;
 }
 
 .dash-header-left {
@@ -92,7 +91,6 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s;
-  white-space: nowrap;
 }
 
 .back-btn:hover {
@@ -100,132 +98,116 @@
   color: #fafafa;
 }
 
-/* ───────────────────────────────────────────────────────────
-   HEADER RESPONSIVE SYSTEM
-   The header uses a two-row stacking approach on mobile:
-
-   ┌─────────────────────────────────────────┐
-   │  [LOGO]   Marketing Leads Report        │  ← row 1
-   ├─────────────────────────────────────────┤
-   │  [Period ▾]  ● Live  🌙  ≡ Present  ↑  │  ← row 2
-   └─────────────────────────────────────────┘
-
-   Triggered at ≤780px (catches most phones and small tablets).
-   Controls shrink further at ≤480px and ≤360px.
-   ─────────────────────────────────────────────────────────── */
-
-@media (max-width: 780px) {
+/* ─── HEADER RESPONSIVE: TWO-ROW WRAP (≤860px) ───────────── */
+/*
+  When the row gets tight, the header wraps gracefully:
+    Row 1  → logo + meta  (full width, left-aligned)
+    Row 2  → all controls (full width, right-aligned)
+  A hairline divider between rows keeps it looking intentional.
+*/
+@media (max-width: 860px) {
 
   .dash-header {
-    flex-wrap: wrap;
-    padding: 0.65rem 1.1rem 0;
+    padding: 0.7rem 1.4rem 0.65rem;
     gap: 0;
-    min-height: unset;
+    row-gap: 0;
+    align-items: stretch;
   }
 
-  /* ── Row 1: logo + meta ── */
+  /* Row 1 — logo + meta, full width */
   .dash-header-left {
     flex: 1 1 100%;
     flex-direction: row;
     align-items: center;
-    gap: 0.9rem;
-    padding-bottom: 0.5rem;
-    /* hairline divider between rows */
+    gap: 1rem;
+    padding-bottom: 0.55rem;
     border-bottom: 1px solid var(--border-orange);
+    margin-bottom: 0.6rem;
   }
 
-  .dash-logo-img img { height: 26px; }
+  .dash-logo-img img { height: 28px; }
 
   .dash-meta {
-    font-size: 0.54rem;
+    font-size: 0.57rem;
     max-width: none;
     flex: 1;
     min-width: 0;
-    letter-spacing: 0.07em;
   }
 
-  /* ── Row 2: all controls ── */
+  /* Row 2 — controls, full width, right-aligned */
   .dash-header-right {
     flex: 1 1 100%;
     justify-content: flex-end;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.45rem 0 0.5rem;
-    flex-wrap: nowrap;
-    overflow-x: auto;              /* safety valve if too many controls */
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    gap: 0.5rem;
   }
-  .dash-header-right::-webkit-scrollbar { display: none; }
+}
 
-  /* Month selector: tighten inline styles can't override so we use !important sparingly */
-  #monthSelectorWrap { gap: 0.35rem !important; }
-  #monthSelectorWrap label { display: none; }   /* hide "Period" label, selector is self-evident */
-  #monthSelector {
-    font-size: 0.62rem !important;
-    padding: 0.32rem 1.5rem 0.32rem 0.55rem !important;
-    max-width: 140px;
+/* ─── HEADER RESPONSIVE: COMPACT CONTROLS (≤540px) ──────── */
+@media (max-width: 540px) {
+
+  .dash-header {
+    padding: 0.6rem 1rem 0.55rem;
   }
 
-  /* Sync pill */
-  .sync-indicator { padding: 0.28rem 0.5rem; font-size: 0.54rem; gap: 0.28rem; }
+  .dash-header-left {
+    gap: 0.75rem;
+    padding-bottom: 0.48rem;
+    margin-bottom: 0.52rem;
+  }
+
+  .dash-logo-img img { height: 22px; }
+  .dash-meta { font-size: 0.51rem; letter-spacing: 0.07em; }
+
+  .dash-header-right { gap: 0.32rem; }
+
+  /* Sync pill: dot only, show countdown */
+  .sync-indicator {
+    padding: 0.28rem 0.55rem;
+    font-size: 0.54rem;
+    gap: 0.3rem;
+  }
   .sync-label-default { display: none; }
-  .sync-countdown { display: inline; font-size: 0.5rem; min-width: 16px; }
+  .sync-countdown { display: inline; font-size: 0.52rem; min-width: 18px; }
 
-  /* Mode toggle */
-  .mode-toggle-inline { padding: 0.3rem 0.55rem; gap: 0.3rem; }
+  /* Mode toggle: icon only */
+  .mode-toggle-inline { padding: 0.32rem 0.55rem; gap: 0.3rem; }
   .mode-toggle-inline .toggle-label { display: none; }
-  .mode-toggle-inline .toggle-icon { font-size: 0.88rem; }
+  .mode-toggle-inline .toggle-icon  { font-size: 0.9rem; }
 
-  /* Present btn */
+  /* Present */
   .present-btn {
-    padding: 0.32rem 0.65rem;
+    padding: 0.35rem 0.7rem;
     font-size: 0.58rem;
     letter-spacing: 0.07em;
     gap: 0.28rem;
-    white-space: nowrap;
   }
   .present-btn svg { width: 11px; height: 11px; }
 
-  /* Back btn */
+  /* Back */
   .back-btn {
-    padding: 0.32rem 0.65rem;
+    padding: 0.35rem 0.7rem;
     font-size: 0.58rem;
     letter-spacing: 0.07em;
-    white-space: nowrap;
   }
 }
 
-@media (max-width: 480px) {
+/* ─── HEADER RESPONSIVE: EXTRA SMALL (≤380px) ───────────── */
+@media (max-width: 380px) {
 
-  .dash-header { padding: 0.55rem 0.9rem 0; }
-
-  .dash-logo-img img { height: 22px; }
-  .dash-meta { font-size: 0.5rem; }
-
-  .dash-header-right { gap: 0.3rem; }
-
-  #monthSelector { max-width: 118px; font-size: 0.58rem !important; }
-
-  /* Present: icon only */
-  .present-btn span { display: none; }
-  .present-btn { padding: 0.3rem 0.55rem; }
-  .present-btn svg { width: 13px; height: 13px; }
-
-  /* Back: short text */
-  .back-btn { font-size: 0.55rem; padding: 0.3rem 0.55rem; letter-spacing: 0.05em; }
-}
-
-@media (max-width: 360px) {
+  .dash-header { padding: 0.55rem 0.8rem 0.5rem; }
 
   .dash-logo-img img { height: 20px; }
-  .dash-meta { display: none; }
+  .dash-meta { display: none; }   /* logo alone is enough at this size */
+  .dash-header-left { padding-bottom: 0.4rem; margin-bottom: 0.44rem; }
 
-  #monthSelector { max-width: 100px; }
+  /* Icon-only buttons */
+  .present-btn span { display: none; }
+  .present-btn { padding: 0.33rem 0.6rem; }
+  .present-btn svg { width: 14px; height: 14px; }
 
-  /* Back: icon only */
-  .back-btn { font-size: 0; padding: 0.3rem 0.5rem; }
-  .back-btn::before { content: '↑'; font-size: 0.9rem; font-family: system-ui; }
+  .back-btn { font-size: 0; padding: 0.33rem 0.6rem; }
+  .back-btn::before { content: '↑'; font-size: 0.85rem; font-family: system-ui; }
 }
 
 /* ─── DASHBOARD BODY ─────────────────────────────────────── */

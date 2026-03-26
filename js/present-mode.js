@@ -83,7 +83,7 @@ function openLeadsPresentView() {
       <div class="pv-title">Live Dashboard · Present View</div>
       <div style="display:flex;align-items:center;gap:0.6rem;">
         <span style="font-family:Montserrat;font-size:0.6rem;color:var(--text-muted);letter-spacing:0.1em;">${fileName || ''}</span>
-        <button class="pv-exit-btn" onclick="closePresentView()">✕ Exit Present</button>
+        <button class="pv-exit-btn" onclick="closePresentView()"><span class="pv-exit-text"> Exit Present</span><span class="pv-exit-x" aria-hidden="true">✕</span></button>
       </div>
     </div>
 

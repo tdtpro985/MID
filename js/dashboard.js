@@ -28,6 +28,7 @@ function toggleMode() {
 
 function setDashboardMode(active) {
   document.getElementById('modeToggle').style.display = active ? 'none' : 'flex';
+  document.body.classList.toggle('dash-active', active);
 }
 
 // ─── PARALLAX ─────────────────────────────────────────────────

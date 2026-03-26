@@ -36,6 +36,9 @@
 .chart-card canvas { max-height: 280px; }
 .chart-card.wide canvas { max-height: 300px; }
 
+/* Rep bar: allow full height so all names render */
+.chart-card.wide canvas#repBar { max-height: none; min-height: 220px; }
+
 /* ─── DONUT CHART ────────────────────────────────────────── */
 #donutCard { overflow: visible; }
 

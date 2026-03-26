@@ -15,7 +15,7 @@ const DONUT_PALETTE = [
 // ── SOURCE BAR CHART ──────────────────────────────────────────
 function buildSourceBar(sources, gridColor, tickColor) {
   const allSources = sources.slice();
-  return new Chart(document.getElementById('sourceBar'), {
+  const chart = new Chart(document.getElementById('sourceBar'), {
     type: 'bar',
     data: {
       labels: allSources.map(s =>
@@ -43,9 +43,20 @@ function buildSourceBar(sources, gridColor, tickColor) {
         },
         y: { ticks: { color: tickColor }, grid: { color: gridColor } }
       },
-      animation: { duration: 1200, easing: 'easeOutQuart' }
+      animation: { duration: 1200, easing: 'easeOutQuart' },
+      onClick(evt) {
+        const points = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
+        if (!points.length) return;
+        const idx = points[0].index;
+        const src = allSources[idx];
+        if (src && window._dpOpenPreview && window._dpBuildSourceContext) {
+          window._dpOpenPreview(window._dpBuildSourceContext(src.name, src.count));
+        }
+      }
     }
   });
+  document.getElementById('sourceBar').style.cursor = 'pointer';
+  return chart;
 }
 
 // ── SVG DONUT CHART ───────────────────────────────────────────
@@ -204,7 +215,7 @@ function buildDonutChart(sources) {
 // ── SALES BAR CHART ───────────────────────────────────────────
 function buildSalesBar(cvtSources, gridColor, tickColor) {
   const validCvt = cvtSources.filter(s => s.gs > 0).sort((a,b) => b.gs - a.gs);
-  return new Chart(document.getElementById('salesBar'), {
+  const chart = new Chart(document.getElementById('salesBar'), {
     type: 'bar',
     data: {
       labels: validCvt.map(s => s.name),
@@ -235,21 +246,48 @@ function buildSalesBar(cvtSources, gridColor, tickColor) {
           grid: { color: gridColor }
         }
       },
-      animation: { duration: 1400, easing: 'easeOutQuart' }
+      animation: { duration: 1400, easing: 'easeOutQuart' },
+      onClick(evt) {
+        const points = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
+        if (!points.length) return;
+        const idx = points[0].index;
+        const src = validCvt[idx];
+        if (src && window._dpOpenPreview && window._dpBuildSalesContext) {
+          window._dpOpenPreview(window._dpBuildSalesContext(src));
+        }
+      }
     }
   });
+  document.getElementById('salesBar').style.cursor = 'pointer';
+  return chart;
 }
 
 // ── REP BAR CHART ─────────────────────────────────────────────
 function buildRepBar(reps, gridColor, tickColor) {
   const sortedReps = [...reps].sort((a,b) => b.count - a.count);
-  return new Chart(document.getElementById('repBar'), {
+
+  // Dynamically compute left padding so all names are fully visible.
+  // Measure longest name at the label font size (10px Montserrat ≈ 6px/char).
+  const longestName = sortedReps.reduce((max, r) => Math.max(max, r.name.length), 0);
+  const yPadLeft = Math.max(60, longestName * 7 + 16); // px
+
+  // Also set canvas height proportional to number of reps so bars never crush
+  const canvas = document.getElementById('repBar');
+  const minBarHeight = 28; // px per bar
+  const desiredH = Math.max(220, sortedReps.length * minBarHeight + 40);
+  canvas.style.maxHeight = desiredH + 'px';
+
+  const chart = new Chart(canvas, {
     type: 'bar',
     data: {
       labels: sortedReps.map(r => r.name),
       datasets: [{
         data: sortedReps.map(r => r.count),
-        backgroundColor: sortedReps.map((_, i) => i < Math.max(1, Math.ceil(sortedReps.length * 0.2)) ? '#e67026' : 'rgba(113,112,116,0.5)'),
+        backgroundColor: sortedReps.map((_, i) =>
+          i < Math.max(1, Math.ceil(sortedReps.length * 0.2))
+            ? '#e67026'
+            : 'rgba(113,112,116,0.5)'
+        ),
         borderRadius: 6,
         borderSkipped: false,
       }]
@@ -257,13 +295,50 @@ function buildRepBar(reps, gridColor, tickColor) {
     options: {
       indexAxis: 'y',
       plugins: { legend: { display: false } },
+      layout: { padding: { left: 0 } },
       scales: {
-        x: { ticks: { color: tickColor }, grid: { color: gridColor } },
-        y: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } }
+        x: {
+          ticks: { color: tickColor },
+          grid: { color: gridColor }
+        },
+        y: {
+          ticks: {
+            color: tickColor,
+            font: { size: 11, family: 'Montserrat' },
+            // Never truncate — always show the full name
+            callback: function(value, index) {
+              return sortedReps[index] ? sortedReps[index].name : value;
+            }
+          },
+          grid: { color: gridColor },
+          afterFit(scale) {
+            // Force the y-axis to be wide enough for the longest label
+            scale.width = yPadLeft;
+          }
+        }
       },
-      animation: { duration: 1200, easing: 'easeOutQuart' }
+      animation: { duration: 1200, easing: 'easeOutQuart' },
+      onClick(evt) {
+        const points = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
+        if (!points.length) return;
+        const idx  = points[0].index;
+        const rep  = sortedReps[idx];
+        if (rep && window._dpOpenPreview) {
+          const allReps = sortedReps;
+          const total   = allReps.reduce((s, r) => s + r.count, 0);
+          const rank    = idx + 1;
+          window._dpOpenPreview(window._dpBuildRepContext
+            ? window._dpBuildRepContext(rep.name, rep.count, rank)
+            : { eyebrow:'SALES REP', title: rep.name,
+                subtitle: `Rank #${rank}`,
+                bodyHTML: `<div class="dp-hero-stat"><div class="dp-hero-val">${rep.count}</div><div class="dp-hero-label">Leads</div></div>` }
+          );
+        }
+      }
     }
   });
+  canvas.style.cursor = 'pointer';
+  return chart;
 }
 
 // ── REFRESH CHART COLORS (for dark/light toggle) ──────────────

@@ -1,41 +1,26 @@
 /* ═══════════════════════════════════════════════════════════
-   POWERSTEEL – responsive.css
-   Non-header responsive rules.
-   Header breakpoints live in dashboard.css (≤780 / ≤480 / ≤360).
-   Breakpoints here: tablet ≤900px · mobile ≤600px · xs ≤380px
+   POWERSTEEL – responsive.css  (v2 mobile-first)
+
+   PHILOSOPHY:
+   • ≥ 901 px  → pure desktop, zero overrides
+   • 601–900px → tablet tweaks (existing behaviour, unchanged)
+   • ≤ 600px   → FULL MOBILE NATIVE redesign
+   • ≤ 380px   → extra-small phone adjustments
+
+   Header breakpoints still live in dashboard.css
+   (≤780 / ≤480 / ≤360) — untouched.
    ═══════════════════════════════════════════════════════════ */
 
-/* ─── TABLET (≤900px) ────────────────────────────────────── */
+/* ─── TABLET (601–900px) — kept exactly as original ─────── */
 @media (max-width: 900px) {
-
-  /* Landing */
   .hero-logo-img img { width: clamp(220px, 70vw, 420px); }
-
-  /* Dash body */
   .dash-body { padding: 2rem 1.25rem; }
-
-  /* KPI grid */
-  .kpi-grid {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1.1rem;
-  }
-
-  /* Charts */
+  .kpi-grid  { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.1rem; }
   .charts-grid { grid-template-columns: 1fr; gap: 1.2rem; }
   .chart-card.wide { grid-column: span 1; }
-
-  /* Source grid */
   .source-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
-
-  /* Table */
   .table-scroll { overflow-x: auto; }
-
-  /* Present view */
-  .pv-body {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: none;
-    overflow-y: auto;
-  }
+  .pv-body { grid-template-columns: 1fr 1fr; grid-template-rows: none; overflow-y: auto; }
   .pv-span-2 { grid-column: span 2; }
   .pv-donut-svg-area { width: 170px; height: 170px; }
   .pv-donut-legend { height: 170px; max-height: 170px; }
@@ -45,148 +30,753 @@
   .pv-title { display: none; }
 }
 
-/* ─── MOBILE (≤600px) ────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   MOBILE  ≤ 600px  – full redesign
+   ══════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
 
-  /* ── Landing ── */
-  .hero-content { padding: 1.5rem 1.1rem 2rem; gap: 0; }
-  .hero-logo-img img { width: min(280px, 82vw); }
-  .brand-tag { font-size: 0.62rem; letter-spacing: 0.28em; margin-bottom: 1.2rem; }
+  /* ── 0. GLOBAL BODY SETUP ──────────────────────────────── */
+  body {
+    font-size: 15px;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior-y: contain;
+  }
 
-  .upload-card { width: min(96vw, 480px); border-radius: 16px; margin-bottom: 1.4rem; }
-  .upload-tab { padding: 0.75rem 0.6rem; font-size: 0.62rem; letter-spacing: 0.1em; gap: 0.35rem; }
-  .upload-tab svg { width: 13px; height: 13px; }
-  .tab-live-badge { font-size: 0.45rem; padding: 0.12rem 0.38rem; }
-  .upload-panel { padding: 1.6rem 1.4rem; min-height: 260px; }
-  .upload-zone { padding: 1.4rem 1.2rem; }
-  .upload-zone h3 { font-size: 1rem; }
-  .upload-zone p  { font-size: 0.76rem; margin-bottom: 1.1rem; }
-  .upload-icon { width: 54px; height: 54px; margin-bottom: 0.85rem; }
-  .upload-icon svg { width: 24px; height: 24px; }
-  .upload-btn { padding: 0.75rem 2rem; font-size: 0.76rem; }
+  /* ─────────────────────────────────────────────────────────
+     1. LANDING PAGE
+     ───────────────────────────────────────────────────────── */
 
-  .gsheet-panel-inner h3 { font-size: 1rem; }
-  .gsheet-panel-inner p  { font-size: 0.74rem; margin-bottom: 1rem; }
-  .gsheet-icon-large { width: 52px; height: 52px; margin-bottom: 0.85rem; }
-  .gsheet-input-row { gap: 0.5rem; }
-  .gsheet-input { padding: 0.65rem 0.8rem; font-size: 0.7rem; }
-  .gsheet-connect-btn { padding: 0 1rem; font-size: 0.65rem; }
-  .gsheet-help { font-size: 0.6rem; }
+  #landing {
+    min-height: 100svh;
+    justify-content: flex-start;
+    padding-top: max(2.5rem, env(safe-area-inset-top));
+    padding-bottom: 2rem;
+    overflow-y: auto;
+  }
 
-  .mode-toggle { top: 0.75rem; right: 0.75rem; padding: 0.3rem 0.65rem; }
+  .hero-content {
+    padding: 1.2rem 1.1rem 1.4rem;
+    gap: 0;
+    width: 100%;
+  }
+
+  .brand-tag {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    margin-bottom: 1rem;
+  }
+
+  /* Logo */
+  .hero-logo-img {
+    margin-bottom: 1.6rem;
+  }
+  .hero-logo-img img {
+    width: min(260px, 78vw);
+  }
+
+  /* Floating mode toggle — push it into top-right safely */
+  .mode-toggle {
+    top: max(0.8rem, env(safe-area-inset-top));
+    right: max(0.9rem, env(safe-area-inset-right));
+    padding: 0.32rem 0.6rem;
+    gap: 0.35rem;
+  }
   .mode-toggle .toggle-label { display: none; }
-  .history-trigger-btn { font-size: 0.62rem; padding: 0.45rem 1rem 0.45rem 0.8rem; }
+  .mode-toggle .toggle-icon  { font-size: 0.95rem; }
 
-  /* ── Stats strip ── */
-  .stats-strip { padding: 1rem 0; }
-  .stat-item .val { font-size: 1.3rem; }
-  .stat-item .lbl { font-size: 0.52rem; }
-  .stat-item { padding: 0 1rem; }
+  /* ── Upload Card ── */
+  .upload-card {
+    width: min(100%, 480px);
+    border-radius: 20px;
+    margin-bottom: 1rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
 
-  /* ── Dash body ── */
-  .dash-body { padding: 1.4rem 0.9rem 2.5rem; }
-  .section-title { font-size: 1.45rem; margin-bottom: 1.1rem; }
-  .section-title .tag { font-size: 0.6rem; padding: 0.18rem 0.55rem; }
-  .file-banner { padding: 0.9rem 1.1rem; margin-bottom: 2rem; gap: 0.75rem; }
+  /* Tab bar — bigger touch targets */
+  .upload-tabs { border-radius: 20px 20px 0 0; overflow: hidden; }
+  .upload-tab {
+    padding: 0.85rem 0.75rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    gap: 0.4rem;
+    min-height: 48px;          /* touch target */
+  }
+  .upload-tab svg { width: 14px; height: 14px; }
+  .tab-live-badge { font-size: 0.46rem; padding: 0.12rem 0.4rem; }
+
+  /* Upload panel */
+  .upload-panel {
+    padding: 1.8rem 1.4rem 1.6rem;
+    min-height: 280px;
+  }
+
+  /* Upload zone */
+  .upload-panel .upload-zone {
+    padding: 1.6rem 1.2rem 1.4rem;
+    border-radius: 16px;
+  }
+
+  .upload-icon {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 1rem;
+  }
+  .upload-icon svg { width: 26px; height: 26px; }
+
+  .upload-zone h3 { font-size: 1.05rem; margin-bottom: 0.35rem; }
+  .upload-zone p  { font-size: 0.78rem; margin-bottom: 1.3rem; line-height: 1.5; }
+
+  .upload-btn {
+    padding: 0.9rem 2.2rem;
+    font-size: 0.8rem;
+    border-radius: 12px;
+    min-height: 48px;          /* touch target */
+    width: 100%;
+  }
+
+  /* Google Sheets panel */
+  .gsheet-panel-inner h3  { font-size: 1rem; }
+  .gsheet-panel-inner p   { font-size: 0.76rem; margin-bottom: 1rem; line-height: 1.5; }
+  .gsheet-icon-large      { width: 56px; height: 56px; margin-bottom: 0.9rem; }
+
+  .gsheet-input-row {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .gsheet-input {
+    padding: 0.8rem 1rem;
+    font-size: 0.78rem;
+    border-radius: 10px;
+    min-height: 48px;
+  }
+  .gsheet-connect-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.8rem 1rem;
+    font-size: 0.72rem;
+    border-radius: 10px;
+    min-height: 48px;
+  }
+  .gsheet-help { font-size: 0.62rem; margin-top: 0.75rem; }
+
+  /* History trigger */
+  .history-trigger-btn {
+    font-size: 0.63rem;
+    padding: 0.5rem 1rem 0.5rem 0.85rem;
+    margin-bottom: 2rem;
+    min-height: 40px;
+  }
+
+  /* Scroll cue — hide on mobile (too cramped) */
+  .scroll-cue { display: none; }
+
+  /* ─────────────────────────────────────────────────────────
+     2. LOADING OVERLAY
+     ───────────────────────────────────────────────────────── */
+  .loading-overlay { gap: 1.5rem; }
+  .loading-text { font-size: 1.2rem; letter-spacing: 0.25em; }
+
+  /* ─────────────────────────────────────────────────────────
+     3. DASHBOARD SHELL
+     ───────────────────────────────────────────────────────── */
+  #dashboard {
+    /* Reserve space for mobile bottom nav */
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ── Sticky header (handled by dashboard.css ≤780 already) ─ */
+  /* Extra safety: ensure header doesn't overlap notch */
+  .dash-header {
+    padding-top: max(0.65rem, env(safe-area-inset-top));
+  }
+
+  /* ── Stats strip — tighten for mobile ── */
+  .stats-strip { padding: 0.9rem 0; }
+  .stats-track { gap: 2.5rem; }
+  .stat-item {
+    padding: 0 1.2rem;
+    border-right-color: rgba(113,112,116,0.2);
+  }
+  .stat-item .val { font-size: 1.4rem; }
+  .stat-item .lbl { font-size: 0.52rem; letter-spacing: 0.15em; }
+
+  /* ── Dashboard body ── */
+  .dash-body {
+    padding: 1.4rem 0.9rem calc(1.4rem + 64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ── File banner ── */
+  .file-banner {
+    padding: 1rem 1.1rem;
+    margin-bottom: 1.6rem;
+    border-radius: 14px;
+    gap: 0.8rem;
+  }
   .file-banner svg { width: 20px; height: 20px; }
-  .file-banner-text h4 { font-size: 0.82rem; }
+  .file-banner-text h4 { font-size: 0.84rem; }
   .file-banner-text p  { font-size: 0.68rem; }
 
-  /* ── KPI: 2 columns ── */
-  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 2.2rem; }
-  .kpi-card { padding: 1.1rem 1rem; }
-  .kpi-label { font-size: 0.6rem; letter-spacing: 0.12em; margin-bottom: 0.5rem; }
-  .kpi-value { font-size: 2rem; }
-  .kpi-sub   { font-size: 0.68rem; }
+  /* ── Section titles ── */
+  .section-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    letter-spacing: 0.06em;
+  }
+  .section-title .tag {
+    font-size: 0.6rem;
+    padding: 0.18rem 0.55rem;
+  }
 
-  /* ── Charts ── */
-  .charts-grid { gap: 0.85rem; margin-bottom: 2.2rem; }
-  .chart-card { padding: 1.1rem; }
-  .chart-card h4 { font-size: 0.72rem; margin-bottom: 1rem; }
-  .chart-card canvas { max-height: 230px; }
+  /* ─────────────────────────────────────────────────────────
+     4. KPI CARDS — 2-column grid, swipeable feel
+     ───────────────────────────────────────────────────────── */
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
 
-  /* Donut side-by-side */
-  .donut-chart-wrap { flex-direction: row; align-items: center; gap: 0.8rem; min-height: 180px; }
-  .donut-svg-area { flex: 0 0 150px; width: 150px; height: 150px; }
-  .donut-legend { max-height: 180px; }
-  .legend-name  { font-size: 0.6rem; }
-  .legend-pct   { font-size: 0.82rem; }
-  .legend-count { font-size: 0.54rem; }
+  .kpi-card {
+    padding: 1.1rem 1rem;
+    border-radius: 16px;
+    /* Subtle lift on active (mobile press feedback) */
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.4s ease;
+  }
+  .kpi-card:active {
+    transform: scale(0.97);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
 
-  /* ── Source grid: 2 columns ── */
-  .source-grid { grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-bottom: 2.2rem; }
-  .source-card { padding: 0.9rem 0.85rem; }
-  .source-card .src-name { font-size: 0.62rem; }
-  .source-card .src-val  { font-size: 1.5rem; }
-  .source-card .src-sub  { font-size: 0.56rem; }
-  .source-card .src-avg  { font-size: 0.54rem; }
+  .kpi-label { font-size: 0.58rem; letter-spacing: 0.1em; margin-bottom: 0.45rem; }
+  .kpi-value { font-size: 1.9rem; }
+  .kpi-sub   { font-size: 0.65rem; }
 
-  /* ── Rep table ── */
-  .table-wrap { border-radius: 10px; margin-bottom: 2.2rem; }
-  .table-header { padding: 0.85rem 1.1rem; }
-  .table-header h4 { font-size: 0.72rem; }
-  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { font-size: 0.73rem; min-width: 340px; }
-  thead th { padding: 0.7rem 1rem; font-size: 0.64rem; }
-  tbody td { padding: 0.65rem 1rem; }
+  /* ─────────────────────────────────────────────────────────
+     5. CHARTS — single column, full-width
+     ───────────────────────────────────────────────────────── */
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+    margin-bottom: 2rem;
+  }
 
-  /* ── History drawer ── */
-  .history-drawer-tab { padding: 0.55rem 1.1rem; font-size: 0.62rem; }
+  .chart-card {
+    padding: 1.2rem 1rem;
+    border-radius: 16px;
+  }
+  .chart-card h4    { font-size: 0.7rem; margin-bottom: 0.9rem; }
+  .chart-card canvas { max-height: 220px; }
 
-  /* ── Present view ── */
-  .pv-body { grid-template-columns: 1fr 1fr; overflow-y: auto; }
-  .pv-span-2 { grid-column: span 2; }
-  .pv-kpi-strip { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .pv-kpi-item { min-width: 74px; padding: 0.4rem; }
-  .pv-kpi-val  { font-size: 1.2rem; }
-  .pv-kpi-lbl  { font-size: 0.46rem; }
-  .pv-header { padding: 0.45rem 0.9rem; }
-  .pv-title { display: none; }
-  .pv-exit-btn { padding: 0.4rem 0.85rem; font-size: 0.62rem; }
+  /* Donut: horizontal layout preserved, compacted */
+  .donut-chart-wrap {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.9rem;
+    min-height: 170px;
+  }
+  .donut-svg-area {
+    flex: 0 0 145px;
+    width: 145px;
+    height: 145px;
+  }
+  .donut-legend    { max-height: 170px; }
+  .legend-name     { font-size: 0.59rem; }
+  .legend-pct      { font-size: 0.84rem; }
+  .legend-count    { font-size: 0.53rem; }
 
-  /* History modal: bottom sheet */
-  .history-modal {
-    width: 96vw;
-    max-height: 78vh;
+  /* donut legend item — bigger touch area */
+  .donut-legend-item { padding: 0.36rem 0.55rem; }
+
+  /* ─────────────────────────────────────────────────────────
+     6. SOURCE BREAKDOWN CARDS — 2-column
+     ───────────────────────────────────────────────────────── */
+  .source-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    margin-bottom: 2rem;
+  }
+
+  .source-card {
+    padding: 0.9rem 0.85rem;
+    border-radius: 14px;
+  }
+  .source-card .src-name { font-size: 0.6rem; margin-bottom: 0.35rem; }
+  .source-card .src-val  { font-size: 1.55rem; }
+  .source-card .src-sub  { font-size: 0.55rem; }
+  .source-card .src-avg  { font-size: 0.53rem; }
+
+  /* ─────────────────────────────────────────────────────────
+     7. REP DATA TABLE — horizontal scroll + styled
+     ───────────────────────────────────────────────────────── */
+  .table-wrap {
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+  }
+  .table-header {
+    padding: 0.9rem 1.1rem;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .table-header h4 { font-size: 0.75rem; }
+
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Scroll indicator gradient on right edge */
+    background:
+      linear-gradient(to right, var(--bg-card) 20px, transparent 20px),
+      linear-gradient(to left,  var(--bg-card) 20px, transparent 20px) 100% 0,
+      linear-gradient(to right, rgba(113,112,116,0.15), transparent) 0%,
+      linear-gradient(to left,  rgba(113,112,116,0.15), transparent) 100%;
+    background-color: var(--bg-card);
+    background-attachment: local, local, scroll, scroll;
+    background-repeat: no-repeat;
+    background-size: 20px 100%, 20px 100%, 10px 100%, 10px 100%;
+  }
+
+  table { font-size: 0.74rem; min-width: 360px; }
+
+  thead th {
+    padding: 0.75rem 1rem;
+    font-size: 0.62rem;
+    /* Sticky columns work better on mobile with position */
+    white-space: nowrap;
+  }
+
+  tbody td { padding: 0.68rem 1rem; }
+
+  /* Contribution % bar hidden on mobile — too narrow */
+  tbody td:last-child > div { flex-direction: column; gap: 0.2rem; }
+  tbody td:last-child > div > div { min-width: unset; }
+
+  /* ─────────────────────────────────────────────────────────
+     8. BOTTOM NAVIGATION BAR (mobile-only)
+     Native-feel tab bar replacing the drawer & top back-btn
+     ───────────────────────────────────────────────────────── */
+
+  /* The bar is injected by JS; these styles shape it */
+  /* Hidden by default — only shown when dashboard is active */
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+
+  body.dash-active .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 120;
+    background: var(--bg-bottom-nav, rgba(14,13,12,0.97));
+    border-top: 1px solid var(--border-orange);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
+    align-items: stretch;
+  }
+
+  .mob-nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.22rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem 0.25rem;
+    position: relative;
+    transition: background 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px;
+  }
+
+  .mob-nav-btn:active { background: rgba(230,112,38,0.09); }
+
+  .mob-nav-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: var(--text-muted);
+    flex-shrink: 0;
+    transition: fill 0.2s, transform 0.2s;
+  }
+
+  .mob-nav-btn .mob-nav-label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.54rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    transition: color 0.2s;
+    line-height: 1;
+  }
+
+  /* Active / highlighted state */
+  .mob-nav-btn.active svg          { fill: var(--orange); transform: translateY(-1px); }
+  .mob-nav-btn.active .mob-nav-label { color: var(--orange); }
+
+  /* Active indicator dot */
+  .mob-nav-btn.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 2px;
+    background: var(--orange);
+    border-radius: 0 0 3px 3px;
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     9. HISTORY DRAWER → converted to bottom-sheet on mobile
+     ───────────────────────────────────────────────────────── */
+
+  /* Hide the original drawer tab bar — we use bottom-nav now */
+  .history-drawer-tab { display: none; }
+
+  /* Drawer body becomes a bottom-sheet */
+  .history-drawer {
+    position: fixed;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    left: 0;
+    right: 0;
+    z-index: 110;
+    flex-direction: column;
+    border-top: 1px solid var(--border-orange);
     border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    background: var(--bg-card);
+  }
+
+  .history-drawer-body {
+    max-height: 0;
+    border-top: none;
+    border-radius: 0;
+    transition: max-height 0.38s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .history-drawer-body.open {
+    max-height: 55vh;
+    border-top: none;
+  }
+
+  .history-drawer-toolbar {
+    padding: 0.75rem 1.2rem 0.5rem;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-card);
+    /* Drag handle visual */
+    position: relative;
+  }
+  .history-drawer-toolbar::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--border-card);
+    border-radius: 2px;
+    margin: 0 auto 0.6rem;
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     10. HISTORY MODAL → full bottom-sheet on mobile
+     ───────────────────────────────────────────────────────── */
+  .history-modal {
+    width: 100vw;
+    max-height: 80vh;
+    border-radius: 20px 20px 0 0;
     top: auto;
     bottom: 0;
-    left: 50%;
-    transform: translateX(-50%) translateY(100%);
+    left: 0;
+    right: 0;
+    transform: translateY(100%);
+    /* Override the -50% centered transform */
   }
-  .history-modal.open { transform: translateX(-50%) translateY(0); }
-  .scroll-cue { display: none; }
+  .history-modal.open {
+    transform: translateY(0);
+  }
+
+  .history-modal-header {
+    /* Drag handle */
+    padding-top: 0.5rem;
+    position: relative;
+  }
+  .history-modal-header::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--border-card);
+    border-radius: 2px;
+    margin: 0 auto 0.6rem;
+    position: absolute;
+    top: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     11. PRESENT VIEW → mobile-optimised single-column
+     ───────────────────────────────────────────────────────── */
+  #presentView {
+    overflow: hidden;
+    flex-direction: column;
+  }
+
+  .pv-header {
+    padding: 0.55rem 1rem 0.55rem max(1rem, env(safe-area-inset-left));
+    gap: 0.6rem;
+  }
+  .pv-title { display: none; }
+  /* Exit button: plain circle X on mobile */
+  .pv-exit-btn {
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+    letter-spacing: 0;
+  }
+  .pv-exit-btn .pv-exit-text { display: none; }
+  .pv-exit-btn .pv-exit-x    { display: block; line-height: 1; }
+
+  /* KPI strip — horizontal scroll */
+  .pv-kpi-strip {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-shrink: 0;
+  }
+  .pv-kpi-strip::-webkit-scrollbar { display: none; }
+  .pv-kpi-item {
+    min-width: 80px;
+    padding: 0.45rem 0.6rem;
+  }
+  .pv-kpi-val { font-size: 1.25rem; }
+  .pv-kpi-lbl { font-size: 0.46rem; }
+
+  /* Present body: vertical scroll, single column */
+  .pv-body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.55rem;
+    padding: 0.55rem;
+    padding-bottom: calc(0.55rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .pv-span-2 { grid-column: span 1; }
+
+  .pv-card {
+    border-radius: 12px;
+    padding: 0.75rem 0.8rem 0.6rem;
+    min-height: 200px;
+  }
+
+  .pv-donut-wrap {
+    flex-direction: row;
+    gap: 0.6rem;
+  }
+  .pv-donut-svg-area { width: 150px; height: 150px; }
+  .pv-donut-legend   { max-height: 150px; height: 150px; }
+
+  .pv-source-list { grid-template-columns: 1fr 1fr; }
+
+  /* ─────────────────────────────────────────────────────────
+     12. TOAST — full-width on mobile
+     ───────────────────────────────────────────────────────── */
+  .error-toast {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    transform: translateY(120%);
+    width: auto;
+    min-width: unset;
+    border-radius: 14px;
+  }
+  .error-toast.show { transform: translateY(0); }
+
+  /* ─────────────────────────────────────────────────────────
+     13. MONTH SELECTOR — tighten for mobile
+     ───────────────────────────────────────────────────────── */
+  #monthSelectorWrap label { display: none !important; }
+  #monthSelector {
+    font-size: 0.62rem !important;
+    padding: 0.35rem 1.5rem 0.35rem 0.6rem !important;
+    max-width: 130px;
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     14. BACK BUTTON — hide on mobile (replaced by bottom nav)
+     ───────────────────────────────────────────────────────── */
+  .back-btn { display: none !important; }
+
+  /* ─────────────────────────────────────────────────────────
+     15. INLINE MODE TOGGLE — icon only
+     ───────────────────────────────────────────────────────── */
+  .mode-toggle-inline {
+    padding: 0.32rem 0.55rem;
+    gap: 0.3rem;
+  }
+  .mode-toggle-inline .toggle-label { display: none; }
+  .mode-toggle-inline .toggle-icon  { font-size: 0.9rem; }
+
+  /* ─────────────────────────────────────────────────────────
+     16. PRESENT BUTTON — icon only on mobile
+     ───────────────────────────────────────────────────────── */
+  .present-btn span { display: none; }
+  .present-btn {
+    padding: 0.35rem 0.6rem;
+    min-width: 36px;
+    justify-content: center;
+  }
+  .present-btn svg { width: 16px; height: 16px; }
+
+  /* ─────────────────────────────────────────────────────────
+     17. PULL-TO-REFRESH INDICATOR (injected by JS)
+     ───────────────────────────────────────────────────────── */
+  .ptr-indicator {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(-60px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-orange);
+    border-radius: 50px;
+    padding: 0.5rem 1.1rem 0.5rem 0.8rem;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--orange);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    backdrop-filter: blur(16px);
+    transition: transform 0.35s cubic-bezier(0.34,1.4,0.64,1), opacity 0.25s ease;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .ptr-indicator.ptr-visible {
+    transform: translateX(-50%) translateY(max(0.75rem, env(safe-area-inset-top)));
+    opacity: 1;
+  }
+  .ptr-indicator svg {
+    width: 14px; height: 14px;
+    fill: var(--orange);
+    flex-shrink: 0;
+    transition: transform 0.4s ease;
+  }
+  .ptr-indicator.ptr-ready svg   { transform: rotate(180deg); }
+  .ptr-indicator.ptr-loading svg { animation: ptrSpin 0.8s linear infinite; }
+
+  @keyframes ptrSpin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     18. RIPPLE EFFECT on tappable cards
+     ───────────────────────────────────────────────────────── */
+  .kpi-card, .source-card, .upload-history-item {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--ripple-color, rgba(230,112,38,0.22));
+    transform: scale(0);
+    animation: rippleAnim 0.5s ease-out forwards;
+    pointer-events: none;
+  }
+
+  @keyframes rippleAnim {
+    to { transform: scale(4); opacity: 0; }
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     19. SWIPE HINT on horizontal charts
+     ───────────────────────────────────────────────────────── */
+  .chart-card::after {
+    content: '← swipe →';
+    display: block;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 0.5rem;
+    opacity: 0.55;
+  }
+  /* Only show on charts that actually scroll */
+  #donutCard::after { display: none; }
+
+  /* ─────────────────────────────────────────────────────────
+     20. HOW-TO MODAL — full bottom-sheet
+     ───────────────────────────────────────────────────────── */
+  .howto-overlay { align-items: flex-end; }
+  .howto-modal {
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 1.5rem 1.3rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .howto-modal h3 { font-size: 1.3rem; }
+  .howto-step-text { font-size: 0.7rem; }
+  .howto-close {
+    width: 100%;
+    text-align: center;
+    min-height: 48px;
+  }
+
 }
 
-/* ─── EXTRA SMALL (≤380px) ───────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   EXTRA SMALL  ≤ 380px
+   ══════════════════════════════════════════════════════════ */
 @media (max-width: 380px) {
 
-  .upload-card { width: 100vw; border-radius: 0; }
-  .upload-panel { padding: 1.3rem 1rem; }
+  .upload-card   { width: 100%; border-radius: 0; border-left: none; border-right: none; }
+  .upload-panel  { padding: 1.4rem 1rem; }
+  .upload-btn    { padding: 0.85rem 1.6rem; }
 
-  .kpi-grid { gap: 0.6rem; }
-  .kpi-card { padding: 0.9rem 0.8rem; }
-  .kpi-value { font-size: 1.75rem; }
+  .kpi-grid  { gap: 0.55rem; }
+  .kpi-card  { padding: 0.9rem 0.8rem; }
+  .kpi-value { font-size: 1.65rem; }
+  .kpi-label { font-size: 0.54rem; }
 
-  /* Donut: stack vertically */
-  .donut-chart-wrap { flex-direction: column; align-items: center; gap: 0.6rem; min-height: unset; }
-  .donut-svg-area { flex: none; width: 160px; height: 160px; }
-  .donut-legend { max-height: 130px; width: 100%; }
+  .donut-chart-wrap { flex-direction: column; align-items: center; gap: 0.5rem; }
+  .donut-svg-area   { flex: none; width: 155px; height: 155px; }
+  .donut-legend     { max-height: 120px; width: 100%; }
 
-  .source-grid { gap: 0.5rem; }
-  .source-card { padding: 0.75rem 0.7rem; }
-  .source-card .src-val { font-size: 1.3rem; }
+  .source-grid  { gap: 0.5rem; }
+  .source-card  { padding: 0.8rem 0.7rem; }
+  .source-card .src-val { font-size: 1.35rem; }
 
-  table { font-size: 0.68rem; }
-  thead th { padding: 0.6rem 0.75rem; }
-  tbody td { padding: 0.55rem 0.75rem; }
+  table       { font-size: 0.68rem; }
+  thead th    { padding: 0.65rem 0.8rem; font-size: 0.58rem; }
+  tbody td    { padding: 0.58rem 0.8rem; }
 
-  /* Present view: single column */
-  .pv-body { grid-template-columns: 1fr; }
-  .pv-span-2 { grid-column: span 1; }
-  .pv-card { min-height: 240px; }
-  .pv-kpi-val { font-size: 1rem; }
-  .pv-kpi-lbl { font-size: 0.4rem; }
+  .pv-body    { grid-template-columns: 1fr; }
+  .pv-span-2  { grid-column: span 1; }
+  .pv-card    { min-height: 210px; }
+  .pv-kpi-val { font-size: 1.1rem; }
 
-  .history-modal { width: 100vw; border-radius: 14px 14px 0 0; }
+  .history-modal { border-radius: 16px 16px 0 0; }
+  .mob-nav-btn svg { width: 20px; height: 20px; }
+  .mob-nav-btn .mob-nav-label { font-size: 0.48rem; }
 }

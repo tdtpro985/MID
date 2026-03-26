@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0e0d0c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f1ef" media="(prefers-color-scheme: light)">
 <title>TDT PowerSteel – Marketing Intelligence</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;600;700;900&family=Raleway:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -18,10 +23,10 @@
 <link rel="stylesheet" href="css/history.css">
 <link rel="stylesheet" href="css/toast.css">
 <link rel="stylesheet" href="css/responsive.css">
+<link rel="stylesheet" href="css/data-preview.css">
 
 <style>
 /* ─── GOOGLE SHEETS SYNC UI ──────────────────────────────── */
-/* ─── SYNC INDICATOR (dashboard header) ──────────────────── */
 .sync-indicator {
   display: none;
   align-items: center;
@@ -39,54 +44,34 @@
   transition: all 0.25s;
   user-select: none;
 }
-
 .sync-indicator.active {
   display: flex;
   border-color: rgba(34,197,94,0.35);
 }
-
-.sync-indicator:hover {
-  border-color: rgba(220,60,60,0.5);
-  color: #dc3c3c;
-}
-
+.sync-indicator:hover { border-color: rgba(220,60,60,0.5); color: #dc3c3c; }
 .sync-indicator:hover .sync-dot { background: #dc3c3c; animation: none; }
 .sync-indicator:hover .sync-label-default { display: none; }
-.sync-indicator:hover .sync-label-hover { display: inline; }
-.sync-indicator:hover .sync-countdown { display: none; }
-
+.sync-indicator:hover .sync-label-hover   { display: inline; }
+.sync-indicator:hover .sync-countdown     { display: none; }
 .sync-label-hover { display: none; }
-
 .sync-dot {
-  width: 7px;
-  height: 7px;
+  width: 7px; height: 7px;
   border-radius: 50%;
   background: #22c55e;
   flex-shrink: 0;
   animation: syncPulse 2s ease-in-out infinite;
 }
-
-.sync-dot.syncing {
-  background: var(--orange);
-  animation: syncSpin 1s linear infinite;
-}
-
-.sync-dot.error {
-  background: #dc3c3c;
-  animation: none;
-}
-
+.sync-dot.syncing { background: var(--orange); animation: syncSpin 1s linear infinite; }
+.sync-dot.error   { background: #dc3c3c; animation: none; }
 @keyframes syncPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.7); }
+  0%,100% { opacity:1; transform:scale(1); }
+  50%     { opacity:.4; transform:scale(.7); }
 }
-
 @keyframes syncSpin {
-  0% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(180deg) scale(0.8); }
-  100% { transform: rotate(360deg) scale(1); }
+  0%   { transform:rotate(0deg) scale(1); }
+  50%  { transform:rotate(180deg) scale(.8); }
+  100% { transform:rotate(360deg) scale(1); }
 }
-
 .sync-countdown {
   font-size: 0.55rem;
   color: var(--text-muted);
@@ -94,101 +79,65 @@
   text-align: right;
 }
 
-/* ─── GSHEET HOW-TO TOOLTIP ──────────────────────────────── */
+/* ─── GSHEET HOW-TO MODAL ────────────────────────────────── */
 .howto-overlay {
   display: none;
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   z-index: 600;
   background: rgba(0,0,0,0.6);
   backdrop-filter: blur(6px);
-  align-items: center;
-  justify-content: center;
+  align-items: center; justify-content: center;
 }
-
 .howto-overlay.open { display: flex; }
-
 .howto-modal {
   background: var(--bg-card);
   border: 1px solid var(--border-orange);
   border-radius: 16px;
   padding: 2rem;
-  max-width: 500px;
-  width: 90vw;
+  max-width: 500px; width: 90vw;
   box-shadow: 0 24px 70px rgba(0,0,0,0.5);
 }
-
 .howto-modal h3 {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.4rem;
-  color: var(--orange);
-  letter-spacing: 0.08em;
-  margin-bottom: 1rem;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.4rem; color:var(--orange);
+  letter-spacing:.08em; margin-bottom:1rem;
 }
-
 .howto-step {
-  display: flex;
-  gap: 0.8rem;
-  margin-bottom: 0.9rem;
-  align-items: flex-start;
+  display:flex; gap:.8rem;
+  margin-bottom:.9rem; align-items:flex-start;
 }
-
 .howto-step-num {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--orange);
-  color: #fff;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.65rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 1px;
+  width:22px; height:22px; border-radius:50%;
+  background:var(--orange); color:#fff;
+  font-family:'Montserrat',sans-serif; font-size:.65rem; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; margin-top:1px;
 }
-
 .howto-step-text {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
+  font-family:'Montserrat',sans-serif;
+  font-size:.72rem; color:var(--text-secondary); line-height:1.5;
 }
-
-.howto-step-text strong { color: var(--text-primary); }
+.howto-step-text strong { color:var(--text-primary); }
 .howto-step-text code {
-  background: rgba(230,112,38,0.1);
-  border: 1px solid rgba(230,112,38,0.2);
-  border-radius: 4px;
-  padding: 0.1rem 0.4rem;
-  font-size: 0.67rem;
-  color: var(--orange);
-  font-family: monospace;
+  background:rgba(230,112,38,.1);
+  border:1px solid rgba(230,112,38,.2);
+  border-radius:4px; padding:.1rem .4rem;
+  font-size:.67rem; color:var(--orange); font-family:monospace;
 }
-
 .howto-close {
-  margin-top: 1.2rem;
-  background: var(--orange);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.6rem 1.4rem;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.2s;
+  margin-top:1.2rem;
+  background:var(--orange); color:#fff;
+  border:none; border-radius:8px;
+  padding:.6rem 1.4rem;
+  font-family:'Montserrat',sans-serif; font-size:.72rem;
+  font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  cursor:pointer; transition:background .2s;
 }
-
-.howto-close:hover { background: var(--orange-dark); }
-
-/* ─── LIGHT MODE ADJUSTMENTS ─────────────────────────────── */
-body.light-mode .gsheet-input {
-  background: rgba(255,255,255,0.5);
-}
+.howto-close:hover { background:var(--orange-dark); }
+body.light-mode .gsheet-input { background:rgba(255,255,255,0.5); }
+/* Present exit btn span defaults (desktop: show text, hide bare X) */
+.pv-exit-x    { display: none; }
+.pv-exit-text { display: inline; }
 </style>
 </head>
 <body>
@@ -207,7 +156,7 @@ body.light-mode .gsheet-input {
   <div class="loading-text" id="loadingText">Processing Data...</div>
 </div>
 
-<!-- ═══════════════════════════════ LANDING PAGE ═══════════════════════════════ -->
+<!-- ═══ LANDING PAGE ═══ -->
 <section id="landing">
   <div class="parallax-bg" id="parallaxBg"></div>
   <div class="steel-texture"></div>
@@ -218,7 +167,8 @@ body.light-mode .gsheet-input {
     <div class="brand-tag">Marketing Intelligence Platform</div>
 
     <div class="hero-logo-img">
-      <img src="assets/logo.png" alt="POWERSTEEL" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <img src="assets/logo.png" alt="POWERSTEEL"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
       <div class="hero-logo" style="display:none;">
         <span class="power">POWER</span><span class="steel">STEEL</span>
       </div>
@@ -226,8 +176,6 @@ body.light-mode .gsheet-input {
 
     <!-- Tabbed Upload Card -->
     <div class="upload-card" id="uploadCard">
-
-      <!-- Tab Bar -->
       <div class="upload-tabs">
         <button class="upload-tab active" id="tabCsv" onclick="switchTab('csv')">
           <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
@@ -244,9 +192,7 @@ body.light-mode .gsheet-input {
       <div class="upload-panel" id="panelCsv">
         <div class="upload-zone" id="uploadZone">
           <div class="upload-icon">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
-            </svg>
+            <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
           </div>
           <h3>Upload Leads Report</h3>
           <p>Drag & drop your CSV file here, or click to browse</p>
@@ -284,7 +230,6 @@ body.light-mode .gsheet-input {
           </div>
         </div>
       </div>
-
     </div><!-- /.upload-card -->
 
     <!-- Recent Files trigger (landing) -->
@@ -293,7 +238,6 @@ body.light-mode .gsheet-input {
       Recent Files
       <span class="history-trigger-count" id="historyTriggerCount">0</span>
     </button>
-
   </div>
 
   <div class="scroll-cue"><span></span></div>
@@ -321,50 +265,41 @@ body.light-mode .gsheet-input {
 <div class="howto-overlay" id="howtoOverlay" onclick="closeHowTo()">
   <div class="howto-modal" onclick="event.stopPropagation()">
     <h3>Publish Your Google Sheet</h3>
-
     <div class="howto-step">
       <div class="howto-step-num">1</div>
-      <div class="howto-step-text">
-        Open your Google Sheet and click <strong>File → Share → Publish to web</strong>.
-      </div>
+      <div class="howto-step-text">Open your Google Sheet and click <strong>File → Share → Publish to web</strong>.</div>
     </div>
     <div class="howto-step">
       <div class="howto-step-num">2</div>
-      <div class="howto-step-text">
-        In the dialog, make sure the left dropdown shows your <strong>sheet tab</strong> (not "Entire document"), and the right dropdown is set to <strong>CSV</strong>.
-      </div>
+      <div class="howto-step-text">Set the left dropdown to your <strong>sheet tab</strong> and the right to <strong>CSV</strong>.</div>
     </div>
     <div class="howto-step">
       <div class="howto-step-num">3</div>
       <div class="howto-step-text">
-        Click <strong>Publish</strong>, confirm, then click <strong>Copy</strong> on the link that appears. It will look like:<br>
+        Click <strong>Publish</strong>, then copy the link:<br>
         <code>docs.google.com/…/pub?gid=…&amp;single=true&amp;output=csv</code>
       </div>
     </div>
     <div class="howto-step">
       <div class="howto-step-num">4</div>
-      <div class="howto-step-text">
-        Paste that link into the input above and click <strong>Connect</strong>. Regular share/edit links also work but require the publish step first.
-      </div>
+      <div class="howto-step-text">Paste that link into the input and click <strong>Connect</strong>.</div>
     </div>
     <div class="howto-step">
       <div class="howto-step-num">5</div>
-      <div class="howto-step-text">
-        <strong>Why Publish to web?</strong> Regular "share" links hit Google's auth flow and are blocked by browsers. The published CSV link is served without authentication and works reliably.
-      </div>
+      <div class="howto-step-text"><strong>Why Publish to web?</strong> Regular share links hit Google's auth and are blocked by browsers.</div>
     </div>
-
     <button class="howto-close" onclick="closeHowTo()">Got it</button>
   </div>
 </div>
 
-<!-- ═══════════════════════════════ DASHBOARD ═══════════════════════════════ -->
+<!-- ═══ DASHBOARD ═══ -->
 <section id="dashboard">
 
   <div class="dash-header">
     <div class="dash-header-left">
       <div class="dash-logo-img">
-        <img src="assets/logo.png" alt="POWERSTEEL" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <img src="assets/logo.png" alt="POWERSTEEL"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
         <div class="dash-logo" style="display:none;">
           <span class="p">POWER</span><span class="s">STEEL</span>
         </div>
@@ -372,8 +307,8 @@ body.light-mode .gsheet-input {
       <div class="dash-meta" id="dashMeta">Marketing Leads Report</div>
     </div>
     <div class="dash-header-right">
-      <!-- Live Sync Indicator — shown when Google Sheets is connected -->
-      <div class="sync-indicator" id="syncIndicator" title="Click to disconnect live sync" onclick="disconnectSync()">
+      <div class="sync-indicator" id="syncIndicator"
+           title="Click to disconnect live sync" onclick="disconnectSync()">
         <span class="sync-dot" id="syncDot"></span>
         <span class="sync-label-default">Live</span>
         <span class="sync-label-hover">Disconnect</span>
@@ -385,7 +320,7 @@ body.light-mode .gsheet-input {
       </button>
       <button class="present-btn" onclick="openPresentView()">
         <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm2 5h12v2H6zm3 5h6v2H9z"/></svg>
-        Present
+        <span>Present</span>
       </button>
       <button class="back-btn" onclick="backToLanding()">← Upload New</button>
     </div>
@@ -519,15 +454,11 @@ function switchTab(tab) {
   var csvPanel  = document.getElementById('panelCsv');
   var sheetPanel= document.getElementById('panelSheet');
   if (tab === 'csv') {
-    csvTab.classList.add('active');
-    sheetTab.classList.remove('active');
-    csvPanel.style.display = '';
-    sheetPanel.style.display = 'none';
+    csvTab.classList.add('active');    sheetTab.classList.remove('active');
+    csvPanel.style.display = '';       sheetPanel.style.display = 'none';
   } else {
-    sheetTab.classList.add('active');
-    csvTab.classList.remove('active');
-    sheetPanel.style.display = '';
-    csvPanel.style.display = 'none';
+    sheetTab.classList.add('active');  csvTab.classList.remove('active');
+    sheetPanel.style.display = '';     csvPanel.style.display = 'none';
   }
 }
 </script>
@@ -537,6 +468,309 @@ function switchTab(tab) {
 <script src="js/present-mode.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/gsheet-sync.js"></script>
+<script src="js/data-preview.js"></script>
+
+<!-- ═══════════════════════════════════════════════════════
+     MOBILE ENHANCEMENTS
+     Only activates when window width ≤ 600px.
+     Adds: bottom nav, ripple, pull-to-refresh hint,
+           back-swipe guard, haptic feedback shim.
+     ═══════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  var IS_MOBILE = window.matchMedia('(max-width: 600px)').matches;
+  if (!IS_MOBILE) return; // ← desktop/tablet: no-op entirely
+
+  /* ── HAPTIC SHIM ────────────────────────────────────────── */
+  function haptic(type) {
+    if (!navigator.vibrate) return;
+    if (type === 'light')  navigator.vibrate(8);
+    if (type === 'medium') navigator.vibrate(18);
+    if (type === 'heavy')  navigator.vibrate([10, 5, 10]);
+  }
+
+  /* ── RIPPLE ─────────────────────────────────────────────── */
+  function addRipple(e) {
+    var el   = e.currentTarget;
+    var rect = el.getBoundingClientRect();
+    var cx   = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    var cy   = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    var size = Math.max(rect.width, rect.height) * 1.4;
+    var r    = document.createElement('span');
+    r.className = 'ripple';
+    r.style.cssText = 'width:' + size + 'px;height:' + size + 'px;'
+      + 'left:' + (cx - size/2) + 'px;top:' + (cy - size/2) + 'px;';
+    el.appendChild(r);
+    setTimeout(function() { r.remove(); }, 520);
+  }
+
+  function attachRipple(selector) {
+    document.querySelectorAll(selector).forEach(function(el) {
+      el.addEventListener('touchstart', addRipple, { passive: true });
+    });
+  }
+
+  /* ── BOTTOM NAVIGATION BAR ──────────────────────────────── */
+  var bottomNav = null;
+
+  var navItems = [
+    {
+      id: 'mob-nav-home',
+      label: 'Upload',
+      icon: '<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
+      action: function() {
+        if (document.getElementById('dashboard').classList.contains('visible')) {
+          haptic('light');
+          backToLanding();
+        }
+      }
+    },
+    {
+      id: 'mob-nav-kpi',
+      label: 'KPIs',
+      icon: '<svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/></svg>',
+      action: function() {
+        haptic('light');
+        var kpiGrid = document.getElementById('kpiGrid');
+        if (kpiGrid) {
+          kpiGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setActiveNav('mob-nav-kpi');
+        }
+      }
+    },
+    {
+      id: 'mob-nav-charts',
+      label: 'Charts',
+      icon: '<svg viewBox="0 0 24 24"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>',
+      action: function() {
+        haptic('light');
+        var chartsGrid = document.querySelector('.charts-grid');
+        if (chartsGrid) {
+          chartsGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setActiveNav('mob-nav-charts');
+        }
+      }
+    },
+    {
+      id: 'mob-nav-history',
+      label: 'History',
+      icon: '<svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7v4l5-5-5-5v4z"/></svg>',
+      action: function() {
+        haptic('light');
+        var dash = document.getElementById('dashboard');
+        if (dash && dash.classList.contains('visible')) {
+          toggleHistoryDrawer();
+          setActiveNav('mob-nav-history');
+        } else {
+          openHistoryModal();
+        }
+      }
+    },
+    {
+      id: 'mob-nav-present',
+      label: 'Present',
+      icon: '<svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm2 5h12v2H6zm3 5h6v2H9z"/></svg>',
+      action: function() {
+        haptic('medium');
+        if (window._pvData) openPresentView();
+      }
+    }
+  ];
+
+  function buildBottomNav() {
+    if (bottomNav) return;
+    bottomNav = document.createElement('nav');
+    bottomNav.className = 'mobile-bottom-nav';
+    bottomNav.setAttribute('role', 'navigation');
+    bottomNav.setAttribute('aria-label', 'Mobile navigation');
+
+    navItems.forEach(function(item) {
+      var btn = document.createElement('button');
+      btn.className = 'mob-nav-btn';
+      btn.id = item.id;
+      btn.setAttribute('aria-label', item.label);
+      btn.innerHTML = item.icon
+        + '<span class="mob-nav-label">' + item.label + '</span>';
+      btn.addEventListener('click', item.action);
+      btn.addEventListener('touchstart', addRipple, { passive: true });
+      bottomNav.appendChild(btn);
+    });
+
+    document.body.appendChild(bottomNav);
+    setActiveNav('mob-nav-home');
+  }
+
+  function setActiveNav(activeId) {
+    if (!bottomNav) return;
+    bottomNav.querySelectorAll('.mob-nav-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.id === activeId);
+    });
+  }
+
+  /* ── Show/hide bottom nav with dashboard ───────────────── */
+  var _origBackToLandingMob;
+  function patchNavVisibility() {
+    // Watch for dashboard becoming visible
+    var dashEl = document.getElementById('dashboard');
+    if (!dashEl) return;
+
+    var observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        if (m.attributeName === 'class') {
+          var isDash = dashEl.classList.contains('visible');
+          if (bottomNav) {
+            // Always visible — just swap active item
+            setActiveNav(isDash ? 'mob-nav-kpi' : 'mob-nav-home');
+          }
+        }
+      });
+    });
+    observer.observe(dashEl, { attributes: true });
+  }
+
+  /* ── PULL-TO-REFRESH HINT (visual only, syncs on release) ── */
+  function initPullToRefresh() {
+    var ptr = document.createElement('div');
+    ptr.className = 'ptr-indicator';
+    ptr.innerHTML = '<svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>'
+      + '<span>Pull to refresh</span>';
+    document.body.appendChild(ptr);
+
+    var startY = 0, currentY = 0, pulling = false, threshold = 72;
+
+    document.addEventListener('touchstart', function(e) {
+      if (window.scrollY > 5) return;
+      startY = e.touches[0].clientY;
+      pulling = true;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', function(e) {
+      if (!pulling) return;
+      currentY = e.touches[0].clientY;
+      var delta = currentY - startY;
+      if (delta < 8) return;
+      ptr.classList.add('ptr-visible');
+      if (delta >= threshold) {
+        ptr.classList.add('ptr-ready');
+        ptr.querySelector('span').textContent = 'Release to refresh';
+      } else {
+        ptr.classList.remove('ptr-ready');
+        ptr.querySelector('span').textContent = 'Pull to refresh';
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', function() {
+      if (!pulling) return;
+      pulling = false;
+      var delta = currentY - startY;
+      ptr.classList.remove('ptr-visible', 'ptr-ready');
+      ptr.querySelector('span').textContent = 'Pull to refresh';
+
+      if (delta >= threshold) {
+        haptic('medium');
+        // Only trigger live sync if connected
+        if (typeof manualSync === 'function' && window._syncPubUrl) {
+          ptr.classList.add('ptr-visible', 'ptr-loading');
+          manualSync().finally(function() {
+            ptr.classList.remove('ptr-visible', 'ptr-loading');
+          });
+        }
+      }
+      startY = 0; currentY = 0;
+    }, { passive: true });
+  }
+
+  /* ── SECTION SCROLL TRACKING (update active nav) ────────── */
+  function initScrollTracking() {
+    var sections = [
+      { selector: '#kpiGrid',      nav: 'mob-nav-kpi' },
+      { selector: '.charts-grid',  nav: 'mob-nav-charts' },
+      { selector: '#sourceGrid',   nav: 'mob-nav-charts' },
+      { selector: '.table-wrap',   nav: 'mob-nav-kpi' }
+    ];
+
+    var throttleTimer = null;
+    window.addEventListener('scroll', function() {
+      if (throttleTimer) return;
+      throttleTimer = setTimeout(function() {
+        throttleTimer = null;
+        var dash = document.getElementById('dashboard');
+        if (!dash || !dash.classList.contains('visible')) return;
+
+        var viewMid = window.scrollY + window.innerHeight * 0.45;
+        var active  = 'mob-nav-kpi';
+
+        sections.forEach(function(s) {
+          var el = document.querySelector(s.selector);
+          if (!el) return;
+          var top = el.getBoundingClientRect().top + window.scrollY;
+          if (top <= viewMid) active = s.nav;
+        });
+
+        setActiveNav(active);
+      }, 80);
+    }, { passive: true });
+  }
+
+  /* ── RIPPLES ON INTERACTIVE CARDS ──────────────────────── */
+  function initRipples() {
+    // Re-attach after dashboard renders
+    var observer = new MutationObserver(function() {
+      attachRipple('.kpi-card');
+      attachRipple('.source-card');
+      attachRipple('.upload-history-item');
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  /* ── PREVENT ACCIDENTAL BACK SWIPE CLOSING THE APP ──────── */
+  function initSwipeGuard() {
+    // iOS overscroll bounce: let it happen naturally but block history swipe
+    // when the dashboard is open (left-edge swipe would trigger browser back)
+    var guard = document.createElement('div');
+    guard.style.cssText =
+      'position:fixed;top:0;left:0;width:12px;height:100%;z-index:9999;';
+    guard.addEventListener('touchstart', function(e) {
+      var dash = document.getElementById('dashboard');
+      if (dash && dash.classList.contains('visible')) {
+        e.stopPropagation();
+      }
+    }, { passive: false });
+    document.body.appendChild(guard);
+  }
+
+  /* ── KEYBOARD: scroll body up when input focuses ────────── */
+  function initKeyboardScroll() {
+    document.querySelectorAll('input, textarea').forEach(function(el) {
+      el.addEventListener('focus', function() {
+        setTimeout(function() {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 350); // wait for keyboard animation
+      });
+    });
+  }
+
+  /* ── INIT ────────────────────────────────────────────────── */
+  function init() {
+    buildBottomNav();
+    patchNavVisibility();
+    initPullToRefresh();
+    initScrollTracking();
+    initRipples();
+    initSwipeGuard();
+    initKeyboardScroll();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+</script>
 
 </body>
 </html>

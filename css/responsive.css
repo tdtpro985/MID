@@ -11,6 +11,24 @@
    (≤780 / ≤480 / ≤360) — untouched.
    ═══════════════════════════════════════════════════════════ */
 
+/* ─── GLOBAL MOBILE FIXES (orientation-independent) ─────── */
+/* Apply regardless of portrait vs landscape so rotating the
+   phone never reveals a black overscroll or a stray nav bar. */
+
+html {
+  background: #0e0d0c; /* prevents black flash on iOS rubber-band scroll */
+}
+body.light-mode,
+html:has(body.light-mode) {
+  background: #f2f1ef;
+}
+
+/* Hide bottom nav whenever present view is open —
+   works in both portrait AND landscape */
+body:has(#presentView.visible) .mobile-bottom-nav {
+  display: none !important;
+}
+
 /* ─── TABLET (601–900px) — kept exactly as original ─────── */
 @media (max-width: 900px) {
   .hero-logo-img img { width: clamp(220px, 70vw, 420px); }
@@ -779,4 +797,181 @@
   .history-modal { border-radius: 16px 16px 0 0; }
   .mob-nav-btn svg { width: 20px; height: 20px; }
   .mob-nav-btn .mob-nav-label { font-size: 0.48rem; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE LANDSCAPE  — short viewport, wide screen
+   Covers phones rotated sideways (height ≤ 500px, landscape)
+   Uses vw/vh units throughout so every screen size fits.
+   ══════════════════════════════════════════════════════════ */
+@media (max-height: 500px) and (orientation: landscape) {
+
+  body {
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior-y: contain;
+  }
+
+  /* ── LANDING ── */
+  #landing {
+    min-height: 100svh;
+    justify-content: center;
+    padding: max(0.5rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.5rem max(1rem, env(safe-area-inset-left));
+    overflow-y: auto;
+  }
+
+  .hero-content {
+    padding: 0.6rem 1rem;
+    gap: 0;
+  }
+
+  .brand-tag {
+    font-size: 0.55rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-logo-img {
+    margin-bottom: 0.9rem;
+  }
+  .hero-logo-img img {
+    width: min(200px, 36vw);
+  }
+
+  .mode-toggle {
+    top: max(0.5rem, env(safe-area-inset-top));
+    right: max(0.7rem, env(safe-area-inset-right));
+    padding: 0.28rem 0.55rem;
+  }
+  .mode-toggle .toggle-label { display: none; }
+
+  /* Upload card — compact horizontal layout */
+  .upload-card {
+    width: min(92vw, 520px);
+    margin-bottom: 0.7rem;
+  }
+
+  .upload-tabs { border-radius: 18px 18px 0 0; }
+  .upload-tab {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.62rem;
+    min-height: 40px;
+  }
+
+  .upload-panel {
+    padding: 1rem 1.4rem 0.9rem;
+    min-height: 200px;
+  }
+
+  .upload-icon { width: 48px; height: 48px; margin-bottom: 0.65rem; }
+  .upload-icon svg { width: 22px; height: 22px; }
+  .upload-zone h3 { font-size: 0.92rem; margin-bottom: 0.25rem; }
+  .upload-zone p  { font-size: 0.72rem; margin-bottom: 1rem; }
+  .upload-btn     { padding: 0.7rem 2rem; font-size: 0.74rem; min-height: 42px; }
+
+  .history-trigger-btn {
+    font-size: 0.6rem;
+    margin-bottom: 1rem;
+    min-height: 36px;
+  }
+
+  .scroll-cue { display: none; }
+
+  /* ── LOADING OVERLAY ── */
+  .loading-text { font-size: 1.1rem; }
+
+  /* ── DASHBOARD SHELL ── */
+  #dashboard {
+    /* Bottom nav is 56px in landscape */
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .dash-header {
+    padding-top: max(0.4rem, env(safe-area-inset-top));
+    padding-left:  max(0.9rem, env(safe-area-inset-left));
+    padding-right: max(0.9rem, env(safe-area-inset-right));
+    min-height: 52px;
+  }
+
+  /* Stats strip */
+  .stats-strip { padding: 0.7rem 0; }
+  .stat-item .val { font-size: 1.25rem; }
+  .stat-item .lbl { font-size: 0.5rem; }
+
+  /* Dashboard body — use full width minus safe areas */
+  .dash-body {
+    max-width: 100%;
+    padding: 1rem max(0.9rem, env(safe-area-inset-right)) calc(1rem + 56px + env(safe-area-inset-bottom, 0px)) max(0.9rem, env(safe-area-inset-left));
+  }
+
+  .section-title { font-size: 1.3rem; margin-bottom: 0.8rem; }
+
+  /* ── KPI CARDS — 4-column row in landscape ── */
+  .kpi-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.6rem;
+    margin-bottom: 1.4rem;
+  }
+  .kpi-card    { padding: 0.85rem 0.8rem; border-radius: 12px; }
+  .kpi-label   { font-size: 0.54rem; margin-bottom: 0.3rem; }
+  .kpi-value   { font-size: 1.6rem; }
+  .kpi-sub     { font-size: 0.58rem; }
+
+  /* ── CHARTS — 2-column ── */
+  .charts-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.4rem;
+  }
+  .chart-card        { padding: 1rem 0.9rem; border-radius: 12px; }
+  .chart-card h4     { font-size: 0.65rem; margin-bottom: 0.7rem; }
+  .chart-card canvas { max-height: 180px; }
+  .chart-card.wide   { grid-column: span 2; }
+  .chart-card.wide canvas { max-height: 200px; }
+
+  /* Swipe hint — hide in landscape (not needed) */
+  .chart-card::after { display: none; }
+
+  /* Donut */
+  .donut-chart-wrap {
+    flex-direction: row;
+    gap: 0.8rem;
+    min-height: 140px;
+  }
+  .donut-svg-area    { flex: 0 0 130px; width: 130px; height: 130px; }
+  .donut-legend      { max-height: 155px; }
+  .legend-name       { font-size: 0.57rem; }
+  .legend-pct        { font-size: 0.82rem; }
+
+  /* ── SOURCE CARDS — 3-column ── */
+  .source-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+    margin-bottom: 1.4rem;
+  }
+  .source-card        { padding: 0.8rem 0.75rem; border-radius: 12px; }
+  .source-card .src-val { font-size: 1.4rem; }
+
+  /* ── TABLE ── */
+  .table-wrap    { border-radius: 12px; margin-bottom: 1.4rem; }
+  table          { font-size: 0.72rem; }
+  thead th       { padding: 0.65rem 0.9rem; font-size: 0.6rem; }
+  tbody td       { padding: 0.6rem 0.9rem; }
+
+  /* ── BOTTOM NAV — slimmer in landscape ── */
+  body.dash-active .mobile-bottom-nav {
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+  .mob-nav-btn      { padding: 0.35rem 0.25rem; }
+  .mob-nav-btn svg  { width: 18px; height: 18px; }
+  .mob-nav-btn .mob-nav-label { font-size: 0.46rem; }
+
+  /* ── HISTORY MODAL ── */
+  .history-modal {
+    max-height: 80vh;
+    top: 50%;
+  }
+
+  /* ── DATA PREVIEW MODAL ── */
+  .dp-modal {
+    max-height: 90vh;
+  }
 }

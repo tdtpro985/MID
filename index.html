@@ -232,6 +232,16 @@
   text-align: right;
 }
 
+/* subtle pulse when live values change */
+.metric-updating {
+  animation: metricPulse 0.55s ease;
+}
+@keyframes metricPulse {
+  0%   { transform: scale(1); opacity: 1; }
+  35%  { transform: scale(1.06); opacity: 0.85; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 /* ─── GSHEET HOW-TO MODAL ────────────────────────────────── */
 .howto-overlay {
   display: none;
@@ -291,6 +301,112 @@ body.light-mode .gsheet-input { background:rgba(255,255,255,0.5); }
 /* Present exit btn span defaults (desktop: show text, hide bare X) */
 .pv-exit-x    { display: none; }
 .pv-exit-text { display: inline; }
+
+/* ─── CREDITS ────────────────────────────────────────────── */
+#_cb {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border-orange);
+  border-radius: 50px;
+  padding: 0.32rem 0.85rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.45;
+  transition: opacity 0.25s, border-color 0.25s, color 0.25s;
+}
+#_cb:hover { opacity: 1; border-color: var(--orange); color: var(--orange); }
+#_cb.cb-show { display: inline-block; }
+#_cbwrap {
+  display: none;
+  justify-content: flex-end;
+  padding: 0.6rem 0 0;
+}
+#_cbwrap.cb-show { display: flex; }
+
+#_cm {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+#_cm.cm-open { display: flex; }
+#_cmb {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-orange);
+  border-radius: 18px;
+  padding: 2rem 2.2rem 1.6rem;
+  width: min(400px, 92vw);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(230,112,38,0.1);
+  animation: _cmIn 0.32s cubic-bezier(0.34,1.3,0.64,1) forwards;
+}
+#_cmb::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--orange), var(--orange-dark), transparent);
+  border-radius: 18px 18px 0 0;
+}
+@keyframes _cmIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+._cm-ey {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.58rem; font-weight: 700;
+  letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--orange); margin-bottom: 0.3rem;
+}
+._cm-ttl {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.8rem; letter-spacing: 0.06em;
+  color: var(--text-primary); margin-bottom: 1.4rem; line-height: 1;
+}
+._cm-list { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 1.6rem; }
+._cm-row {
+  display: flex; flex-direction: column; gap: 0.12rem;
+  padding: 0.65rem 0.9rem;
+  background: rgba(230,112,38,0.05);
+  border: 1px solid rgba(230,112,38,0.1);
+  border-radius: 9px;
+}
+._cm-role {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.56rem; font-weight: 700;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--orange);
+}
+._cm-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--text-primary); letter-spacing: 0.03em;
+}
+._cm-foot {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.6rem; color: var(--text-muted);
+  text-align: center; letter-spacing: 0.08em;
+}
+._cm-xbtn {
+  position: absolute; top: 1rem; right: 1rem;
+  background: rgba(113,112,116,0.12);
+  border: 1px solid var(--border-card);
+  border-radius: 6px; padding: 0.3rem 0.45rem;
+  cursor: pointer; color: var(--text-muted);
+  font-size: 0.75rem; line-height: 1;
+  transition: background 0.2s, color 0.2s;
+}
+._cm-xbtn:hover { background: rgba(220,60,60,0.1); color: #dc3c3c; }
 </style>
 </head>
 <body>
@@ -604,6 +720,8 @@ body.light-mode .gsheet-input { background:rgba(255,255,255,0.5); }
       </div>
     </div>
 
+    <div id="_cbwrap"><button id="_cb" onclick="_oc()" aria-label="Credits">Credits</button></div>
+
   </div><!-- /.dash-body -->
 
   <!-- Upload History Drawer (dashboard) -->
@@ -653,6 +771,16 @@ function switchTab(tab) {
   } else {
     sheetTab.classList.add('active');  csvTab.classList.remove('active');
     sheetPanel.style.display = '';     csvPanel.style.display = 'none';
+    // If the URL input somehow contains pasted CSV data (commas/newlines/very long),
+    // clear it so the user sees an empty link field.
+    var urlInput = document.getElementById('gsheetUrlInput');
+    if (urlInput) {
+      var v = String(urlInput.value || '');
+      var looksLikeCsv = v.indexOf('\n') !== -1 || (v.indexOf(',') !== -1 && v.length > 120);
+      if (looksLikeCsv) urlInput.value = '';
+    }
+    // Reset connect button label if available
+    if (typeof resetConnectBtn === 'function') resetConnectBtn();
   }
 }
 </script>
@@ -663,6 +791,105 @@ function switchTab(tab) {
 <script src="js/dashboard.js"></script>
 <script src="js/gsheet-sync.js"></script>
 <script src="js/data-preview.js"></script>
+
+<!-- ═══ INTRO SPLASH JS ═══ -->
+<script>
+(function() {
+  'use strict';
+
+  var INTRO_KEY      = 'ps_intro_seen';
+  var DURATION_MS    = 3800;
+  var splash         = document.getElementById('introSplash');
+  var barFill        = document.getElementById('introBarFill');
+  var loadingText    = document.getElementById('introLoadingText');
+  var skipBtn        = document.getElementById('introSkipBtn');
+  var dismissed      = false;
+  var rafId          = null;
+  var startTime      = null;
+
+  var loadingPhrases = [
+    'Initializing…',
+    'Loading assets…',
+    'Calibrating data…',
+    'Ready.',
+  ];
+
+  if (sessionStorage.getItem(INTRO_KEY)) {
+    if (splash) splash.classList.add('intro-gone');
+    return;
+  }
+
+  var container = document.getElementById('introParticles');
+  if (container) {
+    for (var i = 0; i < 18; i++) {
+      var p = document.createElement('div');
+      p.className = 'intro-particle';
+      var size = (2 + Math.random() * 4).toFixed(1);
+      p.style.cssText =
+        'width:' + size + 'px;height:' + size + 'px;' +
+        'left:' + (Math.random() * 100).toFixed(1) + '%;' +
+        'animation-duration:' + (9 + Math.random() * 10).toFixed(1) + 's;' +
+        'animation-delay:-' + (Math.random() * 12).toFixed(1) + 's;' +
+        'opacity:' + (0.15 + Math.random() * 0.25).toFixed(2) + ';';
+      container.appendChild(p);
+    }
+  }
+
+  function animateBar(ts) {
+    if (!startTime) startTime = ts;
+    var elapsed  = ts - startTime;
+    var progress = Math.min(elapsed / DURATION_MS, 1);
+    var eased    = 1 - Math.pow(1 - progress, 2.4);
+    if (barFill) barFill.style.width = (eased * 100).toFixed(1) + '%';
+
+    if (loadingText) {
+      var idx = progress < 0.25 ? 0 : progress < 0.55 ? 1 : progress < 0.85 ? 2 : 3;
+      if (loadingText.textContent !== loadingPhrases[idx]) {
+        loadingText.style.opacity = '0';
+        setTimeout(function(phrase) {
+          return function() {
+            if (loadingText) { loadingText.textContent = phrase; loadingText.style.opacity = '1'; }
+          };
+        }(loadingPhrases[idx]), 180);
+      }
+    }
+
+    if (progress < 1 && !dismissed) {
+      rafId = requestAnimationFrame(animateBar);
+    } else if (!dismissed) {
+      dismissIntro();
+    }
+  }
+
+  function dismissIntro() {
+    if (dismissed) return;
+    dismissed = true;
+    cancelAnimationFrame(rafId);
+    sessionStorage.setItem(INTRO_KEY, '1');
+    if (barFill) barFill.style.width = '100%';
+    setTimeout(function() {
+      if (splash) {
+        splash.classList.add('intro-hiding');
+        setTimeout(function() { splash.classList.add('intro-gone'); }, 750);
+      }
+    }, 200);
+  }
+
+  window.skipIntro = function() { dismissIntro(); };
+  if (skipBtn) skipBtn.addEventListener('click', function() { dismissIntro(); });
+
+  document.addEventListener('keydown', function handler(e) {
+    if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') {
+      dismissIntro();
+      document.removeEventListener('keydown', handler);
+    }
+  }, { once: false });
+
+  setTimeout(function() {
+    requestAnimationFrame(animateBar);
+  }, 400);
+})();
+</script>
 
 <!-- ═══════════════════════════════════════════════════════
      MOBILE ENHANCEMENTS
@@ -804,7 +1031,6 @@ function switchTab(tab) {
   }
 
   /* ── Show/hide bottom nav with dashboard ───────────────── */
-  var _origBackToLandingMob;
   function patchNavVisibility() {
     // Watch for dashboard becoming visible
     var dashEl = document.getElementById('dashboard');
@@ -966,114 +1192,55 @@ function switchTab(tab) {
 })();
 </script>
 
-<!-- ═══ INTRO SPLASH JS ═══ -->
+<!-- credits modal --><div id="_cm" onclick="_cc()"><div id="_cmb" onclick="event.stopPropagation()"><button class="_cm-xbtn" onclick="_cc()">✕</button><div class="_cm-ey">TDT PowerSteel MIP</div><div class="_cm-ttl">Project Credits</div><div class="_cm-list" id="_cl"></div><div class="_cm-foot" id="_cf"></div></div></div>
 <script>
-(function() {
-  'use strict';
-
-  var INTRO_KEY      = 'ps_intro_seen';
-  var DURATION_MS    = 3800;   // auto-dismiss after this many ms
-  var splash         = document.getElementById('introSplash');
-  var barFill        = document.getElementById('introBarFill');
-  var loadingText    = document.getElementById('introLoadingText');
-  var skipBtn        = document.getElementById('introSkipBtn');
-  var dismissed      = false;
-  var rafId          = null;
-  var startTime      = null;
-
-  var loadingPhrases = [
-    'Initializing…',
-    'Loading assets…',
-    'Calibrating data…',
-    'Ready.',
-  ];
-
-  // ── Only show once per session ──────────────────────────
-  if (sessionStorage.getItem(INTRO_KEY)) {
-    if (splash) splash.classList.add('intro-gone');
-    return;
+(function(){
+  var _k='PS_MIP_2026';
+  var _e='Cyh9PyY8OhAKEHI1JTohJiA6QBwSYxl8ChVrfH1cUV9Tcml9ACw+O11KUxpwATojMzk6EntLWjVzG2NrLXNJEkBZPDZ9d2sHOlBdU0UkNi1vZXIxU11XFGpxGT8gMXMScVZEOTIxbRsxJlxRQFJwFHFvNHwkEEJdWjVxZW8YEX8UEGZTIyc6P2t8fVxRX1NyaX0JLDw+EnNAQyp/fwYoIjZLURJlODo6I2kTcRBNHk1yITAhLHJlEGFzFnZzCyg6JDpAEh4UPjIyKGtqfX5ZXFExP3NtCDwzV14SfDU1OT8sNX92HhBLfCh9PyY8OhAKEGcRc3ltHTUsRlVAFHxxMSwkNX0IEnhTNjUtKDByIm8=';
+  function _d(e,k){
+    var b=atob(e),o='';
+    for(var i=0;i<b.length;i++) o+=String.fromCharCode(b.charCodeAt(i)^k.charCodeAt(i%k.length));
+    return JSON.parse(o);
   }
-
-  // ── Spawn floating particles ────────────────────────────
-  var container = document.getElementById('introParticles');
-  if (container) {
-    for (var i = 0; i < 18; i++) {
-      var p = document.createElement('div');
-      p.className = 'intro-particle';
-      var size = (2 + Math.random() * 4).toFixed(1);
-      p.style.cssText =
-        'width:' + size + 'px;height:' + size + 'px;' +
-        'left:' + (Math.random() * 100).toFixed(1) + '%;' +
-        'animation-duration:' + (9 + Math.random() * 10).toFixed(1) + 's;' +
-        'animation-delay:-' + (Math.random() * 12).toFixed(1) + 's;' +
-        'opacity:' + (0.15 + Math.random() * 0.25).toFixed(2) + ';';
-      container.appendChild(p);
-    }
-  }
-
-  // ── Progress bar + phrase ticker ───────────────────────
-  function animateBar(ts) {
-    if (!startTime) startTime = ts;
-    var elapsed  = ts - startTime;
-    var progress = Math.min(elapsed / DURATION_MS, 1);
-    // Ease-out: feels like real loading
-    var eased    = 1 - Math.pow(1 - progress, 2.4);
-    if (barFill) barFill.style.width = (eased * 100).toFixed(1) + '%';
-
-    // Update phrase at 25%, 55%, 85%
-    if (loadingText) {
-      var idx = progress < 0.25 ? 0 : progress < 0.55 ? 1 : progress < 0.85 ? 2 : 3;
-      if (loadingText.textContent !== loadingPhrases[idx]) {
-        loadingText.style.opacity = '0';
-        setTimeout(function(phrase) {
-          return function() {
-            if (loadingText) { loadingText.textContent = phrase; loadingText.style.opacity = '1'; }
-          };
-        }(loadingPhrases[idx]), 180);
+  function _r(){
+    var list=document.getElementById('_cl');
+    var foot=document.getElementById('_cf');
+    if(!list||list.children.length) return;
+    var items=_d(_e,_k);
+    var lastRole='';
+    items.forEach(function(it){
+      var row=document.createElement('div');
+      row.className='_cm-row';
+      if(it.role!==lastRole){
+        var rl=document.createElement('div');
+        rl.className='_cm-role';
+        rl.textContent=it.role;
+        row.appendChild(rl);
+        lastRole=it.role;
       }
-    }
-
-    if (progress < 1 && !dismissed) {
-      rafId = requestAnimationFrame(animateBar);
-    } else if (!dismissed) {
-      dismissIntro();
-    }
+      var nm=document.createElement('div');
+      nm.className='_cm-name';
+      nm.textContent=it.name;
+      row.appendChild(nm);
+      list.appendChild(row);
+    });
+    if(foot) foot.textContent='© '+new Date().getFullYear()+' TDT PowerSteel Corp.';
   }
-
-  // ── Dismiss ─────────────────────────────────────────────
-  function dismissIntro() {
-    if (dismissed) return;
-    dismissed = true;
-    cancelAnimationFrame(rafId);
-    sessionStorage.setItem(INTRO_KEY, '1');
-    if (barFill) barFill.style.width = '100%';
-    setTimeout(function() {
-      if (splash) {
-        splash.classList.add('intro-hiding');
-        setTimeout(function() { splash.classList.add('intro-gone'); }, 750);
-      }
-    }, 200);
+  window._oc=function(){_r();document.getElementById('_cm').classList.add('cm-open');};
+  window._cc=function(){document.getElementById('_cm').classList.remove('cm-open');};
+  document.addEventListener('keydown',function(e){if(e.key==='Escape') _cc();});
+  // Show the button only when dashboard is visible
+  var dash=document.getElementById('dashboard');
+  if(dash){
+    new MutationObserver(function(){
+      var wrap=document.getElementById('_cbwrap');
+      var btn=document.getElementById('_cb');
+      var on=dash.classList.contains('visible');
+      if(wrap) wrap.classList.toggle('cb-show',on);
+      if(btn) btn.classList.toggle('cb-show',on);
+    }).observe(dash,{attributes:true});
   }
-
-  // ── Skip button ─────────────────────────────────────────
-  window.skipIntro = function() { dismissIntro(); };
-  if (skipBtn) skipBtn.addEventListener('click', function() { dismissIntro(); });
-
-  // ── Keyboard: any key skips ──────────────────────────────
-  document.addEventListener('keydown', function handler(e) {
-    if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') {
-      dismissIntro();
-      document.removeEventListener('keydown', handler);
-    }
-  }, { once: false });
-
-  // ── Start animation after a short settle ────────────────
-  setTimeout(function() {
-    requestAnimationFrame(animateBar);
-  }, 400);
-
 })();
 </script>
-
 </body>
 </html>

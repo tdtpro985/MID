@@ -154,6 +154,12 @@ function clearHistoryItem(fileName) {
 function loadHistoryItem(fileName) {
   const item = getHistory().find(h => h.fileName === fileName);
   if (!item) return;
+
+  // If we were connected to a live Google Sheet, stop live polling before
+  // rendering a historical CSV snapshot.
+  if (typeof disconnectSyncSoft === 'function' && window._syncPubUrl) {
+    disconnectSyncSoft();
+  }
   if (drawerOpen) {
     drawerOpen = false;
     document.getElementById('historyDrawerBody')?.classList.remove('open');
@@ -161,7 +167,7 @@ function loadHistoryItem(fileName) {
     document.getElementById('historyDrawer')?.classList.remove('drawer-open');
   }
   document.getElementById('loadingOverlay').classList.add('show');
-  setTimeout(() => { buildDashboard(item.data, item.fileName); }, 200);
+  setTimeout(() => { buildDashboard(item.data, item.fileName, null, false, true); }, 200);
 }
 
 function formatTimestamp(ts) {
@@ -232,18 +238,9 @@ function toggleHistoryDrawer() {
 
 // ─── CSV PROCESSING ───────────────────────────────────────────
 let charts = {};
+window._charts = charts;
 
 function processFile(file) {
-  // If a Google Sheet sync loop is running, stop it before switching to a CSV upload
-  if (typeof stopSyncLoop === 'function') stopSyncLoop();
-  if (typeof _syncPubUrl !== 'undefined') {
-    window._syncPubUrl  = null;
-    window._syncSheetId = null;
-    window._syncLabel   = null;
-  }
-  const syncIndicator = document.getElementById('syncIndicator');
-  if (syncIndicator) syncIndicator.classList.remove('active');
-
   document.getElementById('loadingOverlay').classList.add('show');
   const lt = document.getElementById('loadingText');
   if (lt) lt.textContent = 'Processing Data…';
@@ -523,7 +520,8 @@ function extractMonthData(block) {
   // Col indices: [5]=Actual, [6]=Target, [7]=Pct, [10]=TotalCvtd,
   //              [13]=TotalFT, [14]=TotalGK, [15]=TotalGS, [16]=OverallGS
   const sr = rows[0];
-  const actualLeads    = parseInt((sr[5]  || '0').replace(/,/g, '')) || sources.reduce((s,r)=>s+r.count,0);
+  const actualParsed   = parseInt((sr[5]  || '').replace(/,/g, ''), 10);
+  const actualLeads    = Number.isFinite(actualParsed) ? actualParsed : sources.reduce((s,r)=>s+r.count,0);
   const targetLeads    = parseInt((sr[6]  || '0').replace(/,/g, '')) || 0;
   const pctRaw         = parseFloat((sr[7]  || '0').replace('%','')) || 0;
   const pct            = isNaN(pctRaw) ? 0 : pctRaw;
@@ -598,6 +596,58 @@ function fmtPeso(val) {
   if (Math.abs(val) >= 1000000) return '₱' + (val / 1000000).toFixed(2) + 'M';
   if (Math.abs(val) >= 1000)    return '₱' + (val / 1000).toFixed(1) + 'K';
   return '₱' + val.toLocaleString();
+}
+
+function parseDisplayNumber(text) {
+  const cleaned = String(text || '').replace(/,/g, '').replace(/[^0-9.\-]/g, '');
+  const num = parseFloat(cleaned);
+  return Number.isFinite(num) ? num : NaN;
+}
+
+function formatLikeTemplate(num, template) {
+  const t = String(template || '');
+  if (t.indexOf('₱') !== -1) return fmtPeso(num);
+  if (t.indexOf('%') !== -1) return num.toFixed(2) + '%';
+  if (t.indexOf('.') !== -1) {
+    const frac = (t.split('.')[1] || '').replace(/[^0-9]/g, '').length;
+    return num.toLocaleString(undefined, {
+      minimumFractionDigits: frac,
+      maximumFractionDigits: frac
+    });
+  }
+  return Math.round(num).toLocaleString();
+}
+
+function animateValueText(el, nextText, durationMs) {
+  if (!el) return;
+  const prevText = el.textContent || '';
+  if (prevText === nextText) return;
+  const from = parseDisplayNumber(prevText);
+  const to = parseDisplayNumber(nextText);
+  if (!Number.isFinite(from) || !Number.isFinite(to)) {
+    el.textContent = nextText;
+    el.classList.remove('metric-updating');
+    void el.offsetWidth;
+    el.classList.add('metric-updating');
+    return;
+  }
+  const start = performance.now();
+  const total = durationMs || 650;
+  const delta = to - from;
+  function tick(now) {
+    const p = Math.min(1, (now - start) / total);
+    const eased = 1 - Math.pow(1 - p, 3);
+    const current = from + delta * eased;
+    el.textContent = formatLikeTemplate(current, nextText);
+    if (p < 1) requestAnimationFrame(tick);
+    else {
+      el.textContent = nextText;
+      el.classList.remove('metric-updating');
+      void el.offsetWidth;
+      el.classList.add('metric-updating');
+    }
+  }
+  requestAnimationFrame(tick);
 }
 
 // ─── MONTH SELECTOR STATE ─────────────────────────────────────
@@ -720,9 +770,19 @@ function renderDashboardForData(md, fileName, allMonthData, isLiveSync, silent) 
   ];
   const track = document.getElementById('statsTrack');
   const allItems = [...statsData, ...statsData];
-  track.innerHTML = allItems.map(s =>
-    `<div class="stat-item"><span class="val">${s.val}</span><span class="lbl">${s.lbl}</span></div>`
-  ).join('');
+  const existingStatItems = track.querySelectorAll('.stat-item');
+  if (isLiveSync && existingStatItems.length === allItems.length) {
+    existingStatItems.forEach((item, i) => {
+      const valEl = item.querySelector('.val');
+      const lblEl = item.querySelector('.lbl');
+      if (lblEl) lblEl.textContent = allItems[i].lbl;
+      animateValueText(valEl, allItems[i].val, 600);
+    });
+  } else {
+    track.innerHTML = allItems.map(s =>
+      `<div class="stat-item"><span class="val">${s.val}</span><span class="lbl">${s.lbl}</span></div>`
+    ).join('');
+  }
   document.getElementById('statsStrip').style.display = 'block';
 
   // ── File / Period Info ────────────────────────────────────────
@@ -748,19 +808,35 @@ function renderDashboardForData(md, fileName, allMonthData, isLiveSync, silent) 
   ];
 
   const kpiGrid = document.getElementById('kpiGrid');
-  kpiGrid.innerHTML = '';
-  kpis.forEach((k, i) => {
-    const card = document.createElement('div');
-    card.className = 'kpi-card';
-    card.style.animationDelay = (i * 0.1) + 's';
-    card.innerHTML = `
-      <div class="accent-bar"></div>
-      <div class="kpi-label">${k.label}</div>
-      <div class="kpi-value ${k.orange ? 'orange' : ''}">${k.value}</div>
-      <div class="kpi-sub">${k.sub}</div>
-    `;
-    kpiGrid.appendChild(card);
-  });
+  const existingKpis = kpiGrid.querySelectorAll('.kpi-card');
+  if (isLiveSync && existingKpis.length === kpis.length) {
+    existingKpis.forEach((card, i) => {
+      const k = kpis[i];
+      const lbl = card.querySelector('.kpi-label');
+      const val = card.querySelector('.kpi-value');
+      const sub = card.querySelector('.kpi-sub');
+      if (lbl) lbl.textContent = k.label;
+      if (val) {
+        val.classList.toggle('orange', !!k.orange);
+        animateValueText(val, k.value, 700);
+      }
+      if (sub) sub.textContent = k.sub;
+    });
+  } else {
+    kpiGrid.innerHTML = '';
+    kpis.forEach((k, i) => {
+      const card = document.createElement('div');
+      card.className = 'kpi-card';
+      card.style.animationDelay = (i * 0.1) + 's';
+      card.innerHTML = `
+        <div class="accent-bar"></div>
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value ${k.orange ? 'orange' : ''}">${k.value}</div>
+        <div class="kpi-sub">${k.sub}</div>
+      `;
+      kpiGrid.appendChild(card);
+    });
+  }
 
   // ── Store for Present View ────────────────────────────────────
   window._pvData = {
@@ -820,6 +896,7 @@ function renderDashboardForData(md, fileName, allMonthData, isLiveSync, silent) 
     charts.salesBar  = buildSalesBar(md.cvtSources, gridColor, tickColor);
     charts.repBar    = buildRepBar(md.reps, gridColor, tickColor);
   }
+  window._charts = charts;
 
   // ── Source Cards ──────────────────────────────────────────────
   const maxCount = Math.max(...md.sources.map(s => s.count), 1);
@@ -875,6 +952,8 @@ function renderDashboardForData(md, fileName, allMonthData, isLiveSync, silent) 
   document.getElementById('dashboard').classList.add('visible');
   setDashboardMode(true);
   if (!silent) window.scrollTo(0, 0);
+  // Notify present view of new data (no-op if not open)
+  if (typeof notifyPresentViewUpdate === "function") notifyPresentViewUpdate();
 }
 
 // ─── BACK TO LANDING ──────────────────────────────────────────
@@ -884,6 +963,20 @@ function backToLanding() {
   document.getElementById('statsStrip').style.display = 'none';
   document.getElementById('statsTrack').innerHTML = '';
   document.getElementById('fileInput').value = '';
+  // Fully reset dashboard UI + charts so a new data source can't reuse old state
+  try { Object.values(charts).forEach(c => c && c.destroy && c.destroy()); } catch (e) {}
+  charts = {};
+  window._pvData = null;
+  const kpiGrid = document.getElementById('kpiGrid');
+  if (kpiGrid) kpiGrid.innerHTML = '';
+  const srcGrid = document.getElementById('sourceGrid');
+  if (srcGrid) srcGrid.innerHTML = '';
+  const tbody = document.getElementById('repTableBody');
+  if (tbody) tbody.innerHTML = '';
+  const tableCount = document.getElementById('tableCount');
+  if (tableCount) tableCount.textContent = '';
+  const repTitle = document.getElementById('repTableTitle');
+  if (repTitle) repTitle.textContent = 'Sales Representatives';
   // Remove month selector
   const sel = document.getElementById('monthSelectorWrap');
   if (sel) sel.remove();

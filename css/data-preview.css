@@ -413,48 +413,7 @@
   letter-spacing: 0.08em;
 }
 
-/* ─── CHART CLICK HINTS ──────────────────────────────────── */
-.chart-card canvas {
-  cursor: default;
-  transition: filter 0.2s ease;
-}
-
-/* Bars get pointer on hover (set via JS), give subtle glow */
-.chart-card canvas[style*="pointer"] {
-  filter: none;
-}
-
-.chart-card canvas[style*="pointer"]:hover {
-  filter: brightness(1.04);
-}
-
-/* Small "click a bar" badge on chart cards that are clickable */
-.chart-card.dp-clickable-chart::after {
-  content: 'Click a bar to explore';
-  display: block;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.52rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--orange);
-  opacity: 0;
-  text-align: right;
-  margin-top: 0.4rem;
-  transition: opacity 0.25s ease;
-}
-
-.chart-card.dp-clickable-chart:hover::after {
-  opacity: 0.7;
-}
-
-/* Override the mobile swipe hint for clickable charts */
-@media (max-width: 600px) {
-  .chart-card.dp-clickable-chart::after {
-    content: 'Tap a bar to explore';
-    opacity: 0.55;
-  }
-}
+/* ─── CARD CLICK HINTS ───────────────────────────────────── */
 .dp-card-hint {
   font-family: 'Montserrat', sans-serif;
   font-size: 0.55rem;
@@ -469,13 +428,15 @@
 }
 
 .kpi-card:hover .dp-card-hint,
-.source-card:hover .dp-card-hint {
+.source-card:hover .dp-card-hint,
+.chart-card:hover .dp-card-hint {
   opacity: 0.8;
 }
 
 /* Small "tap" ripple ring on hover for clickable cards */
 .kpi-card::after,
-.source-card::after {
+.source-card::after,
+.chart-card::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -486,7 +447,8 @@
 }
 
 .kpi-card:hover::after,
-.source-card:hover::after {
+.source-card:hover::after,
+.chart-card:hover::after {
   box-shadow: inset 0 0 0 2px rgba(230, 112, 38, 0.25);
 }
 

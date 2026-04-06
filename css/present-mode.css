@@ -406,3 +406,199 @@
   fill: var(--orange);
   flex-shrink: 0;
 }
+
+/* ─── MOBILE: HIDE FILENAME IN PRESENT VIEW HEADER ──────── */
+@media (max-width: 768px) {
+  .pv-header-filename {
+    display: none !important;
+  }
+}
+
+/* ─── MOBILE LANDSCAPE ───────────────────────────────────── */
+/* Same grid as desktop (1fr 2fr 1fr / 2 rows), scrollable.   */
+@media (max-height: 500px) and (orientation: landscape) {
+
+  #presentView {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Slim header */
+  .pv-header {
+    flex-shrink: 0;
+    padding: 0.3rem max(1rem, env(safe-area-inset-right)) 0.3rem max(1rem, env(safe-area-inset-left));
+  }
+  .pv-logo-img img { height: 1.5rem; }
+  .pv-logo         { font-size: 1.1rem; }
+  .pv-title,
+  .pv-header-filename { display: none !important; }
+  .pv-exit-btn {
+    padding: 0.3rem 0.8rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+  }
+  .pv-exit-btn .pv-exit-text { display: inline; }
+  .pv-exit-btn .pv-exit-x    { display: none; }
+
+  /* KPI strip — slim, horizontal scroll */
+  .pv-kpi-strip {
+    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .pv-kpi-strip::-webkit-scrollbar { display: none; }
+  .pv-kpi-item { padding: 0.25rem 0.5rem; min-width: 70px; }
+  .pv-kpi-val  { font-size: 1.1rem; }
+  .pv-kpi-lbl  { font-size: 0.44rem; }
+
+  /* Body — same 1fr 2fr 1fr grid, scrollable vertically */
+  .pv-body {
+    flex: 1;
+    min-height: unset;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    padding-left:  max(0.5rem, env(safe-area-inset-left));
+    padding-right: max(0.5rem, env(safe-area-inset-right));
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+
+  .pv-span-2 { grid-column: span 2; }
+
+  /* Cards — fixed height so they're readable while scrolling */
+  .pv-card {
+    min-height: 180px;
+    padding: 0.6rem 0.7rem 0.5rem;
+    border-radius: 8px;
+  }
+  .pv-card-title { font-size: 0.52rem; margin-bottom: 0.3rem; }
+  .pv-card canvas { max-height: 150px; }
+
+  /* Donut */
+  .pv-donut-svg-area { width: 130px; height: 130px; }
+  .pv-donut-legend   { max-height: 130px; height: 130px; }
+  .pv-legend-name    { font-size: 0.52rem; }
+  .pv-legend-pct     { font-size: 0.8rem; }
+
+  /* Source list */
+  .pv-source-list { grid-template-columns: 1fr 1fr; }
+  .pv-src-name    { font-size: 0.46rem; }
+  .pv-src-val     { font-size: 0.88rem; }
+
+  /* Rep table */
+  .pv-table          { font-size: 0.56rem; }
+  .pv-table thead th { padding: 0.22rem 0.45rem; font-size: 0.48rem; }
+  .pv-table tbody td { padding: 0.2rem 0.45rem; }
+  .pv-table-scroll   { overflow-y: auto; max-height: 130px; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRESENT VIEW – Live update additions (v2)
+   ─── Update bar, live pill, value bump animation ──────────
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── LIVE PILL (header) ─────────────────────────────────── */
+.pv-live-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(230,112,38,0.12);
+  border: 1px solid rgba(230,112,38,0.35);
+  border-radius: 50px;
+  padding: 0.28rem 0.65rem;
+  flex-shrink: 0;
+}
+
+.pv-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--orange);
+  flex-shrink: 0;
+  animation: pvLivePulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pvLivePulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.3; transform: scale(0.65); }
+}
+
+.pv-live-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: var(--orange);
+  text-transform: uppercase;
+}
+
+.pv-live-countdown {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.52rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 20px;
+  letter-spacing: 0.05em;
+}
+
+/* ─── UPDATE FLASH BAR ───────────────────────────────────── */
+.pv-update-bar {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.28rem 1.5rem;
+  background: rgba(230,112,38,0.07);
+  border-bottom: 1px solid rgba(230,112,38,0.18);
+  flex-shrink: 0;
+  transition: opacity 0.5s ease;
+}
+
+.pv-update-bar.pv-update-flash {
+  animation: pvUpdateFlash 2.8s ease forwards;
+}
+
+@keyframes pvUpdateFlash {
+  0%   { background: rgba(230,112,38,0.22); }
+  30%  { background: rgba(230,112,38,0.12); }
+  100% { background: rgba(230,112,38,0.05); }
+}
+
+.pv-update-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--orange);
+  flex-shrink: 0;
+  animation: pvUpdateDotBounce 0.4s cubic-bezier(0.34,1.6,0.64,1);
+}
+
+@keyframes pvUpdateDotBounce {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+
+.pv-update-msg {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--orange);
+  text-transform: uppercase;
+}
+
+/* ─── KPI VALUE BUMP ─────────────────────────────────────── */
+.pv-val-bump {
+  animation: pvValBump 0.45s cubic-bezier(0.34,1.6,0.64,1);
+}
+
+@keyframes pvValBump {
+  0%   { transform: scale(0.82); opacity: 0.4; color: #fafafa; }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1);    opacity: 1; }
+}

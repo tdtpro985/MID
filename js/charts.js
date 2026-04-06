@@ -130,7 +130,7 @@ function buildDonutChart(sources) {
 
     path.addEventListener('mouseenter', () => activateSegment(i));
     path.addEventListener('mouseleave', () => deactivateSegment());
-    path.addEventListener('click',      () => toggleSegment(i));
+    path.addEventListener('click', (e) => { e.stopPropagation(); toggleSegment(i); });
 
     segG.appendChild(path);
     segPaths.push({ path, color, startDeg, endDeg });
@@ -155,7 +155,7 @@ function buildDonutChart(sources) {
     `;
     item.addEventListener('mouseenter', () => activateSegment(i));
     item.addEventListener('mouseleave', () => deactivateSegment());
-    item.addEventListener('click',      () => toggleSegment(i));
+    item.addEventListener('click', (e) => { e.stopPropagation(); toggleSegment(i); });
     legendEl.appendChild(item);
     legendItems.push(item);
   });
@@ -171,6 +171,125 @@ function buildDonutChart(sources) {
   function toggleSegment(idx) {
     if (activeIndex === idx) { activeIndex = -1; clearHighlight(); }
     else { activeIndex = idx; highlightSegment(idx); }
+    openDonutSegmentPopup(idx);
+  }
+
+  function openDonutSegmentPopup(idx) {
+    const { src, fraction, color } = segments[idx];
+    if (!window._dpOpenPreview) return;
+
+    const md = window._pvData;
+    const allSources = md ? [...md.sources].sort((a, b) => b.count - a.count) : [];
+    const total = allSources.reduce((s, r) => s + r.count, 0);
+    const pct = (fraction * 100).toFixed(1);
+    const rank = allSources.findIndex(s => s.name === src.name) + 1;
+    const max = allSources.length ? allSources[0].count : 1;
+
+    // Find CVT data for this source
+    const cvt = (md && md.cvtSources) ? md.cvtSources.find(c => c.name === src.name) : null;
+    const cvtHTML = cvt && (cvt.gs || cvt.gk) ? `
+      <div class="dp-two-col" style="margin-bottom:1.2rem;">
+        <div class="dp-stat-box">
+          <div class="dp-stat-box-val" style="font-size:1.1rem;">₱${((cvt.gs||0)/1000000).toFixed(2)}M</div>
+          <div class="dp-stat-box-lbl">Gross Sales</div>
+        </div>
+        <div class="dp-stat-box">
+          <div class="dp-stat-box-val" style="font-size:1.1rem;">₱${((cvt.gk||0)/1000000).toFixed(2)}M</div>
+          <div class="dp-stat-box-lbl">GK Value</div>
+        </div>
+      </div>
+    ` : '';
+
+    // Mini SVG arc showing only this segment's portion (animated)
+    const arcRadius = 44, arcSW = 14, arcCX = 60, arcCY = 60;
+    const arcCircumference = 2 * Math.PI * arcRadius;
+    const arcDash = (fraction * arcCircumference).toFixed(2);
+    const arcGap  = (arcCircumference - fraction * arcCircumference).toFixed(2);
+
+    const miniArcSVG = `
+      <svg width="120" height="120" viewBox="0 0 120 120" style="flex-shrink:0;overflow:visible;">
+        <defs>
+          <filter id="dpGlow${idx}">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- Background ring -->
+        <circle cx="${arcCX}" cy="${arcCY}" r="${arcRadius}"
+          fill="none" stroke="rgba(113,112,116,0.15)" stroke-width="${arcSW}"/>
+        <!-- Progress arc (starts at top = -90deg) -->
+        <circle cx="${arcCX}" cy="${arcCY}" r="${arcRadius}"
+          fill="none" stroke="${color}" stroke-width="${arcSW}"
+          stroke-linecap="round"
+          stroke-dasharray="0 ${arcCircumference}"
+          style="transform:rotate(-90deg);transform-origin:${arcCX}px ${arcCY}px;
+                 transition:stroke-dasharray 1s cubic-bezier(0.16,1,0.3,1);
+                 filter:url(#dpGlow${idx});"
+          id="dpArcCircle${idx}"/>
+        <!-- Center percent -->
+        <text x="${arcCX}" y="${arcCY - 6}" text-anchor="middle"
+          font-family="Bebas Neue,sans-serif" font-size="22" fill="${color}"
+          letter-spacing="0.02em">${pct}%</text>
+        <text x="${arcCX}" y="${arcCY + 11}" text-anchor="middle"
+          font-family="Montserrat,sans-serif" font-size="7.5" fill="var(--text-secondary)"
+          font-weight="700" letter-spacing="0.15em">SHARE</text>
+      </svg>
+    `;
+
+    // Rank badge
+    const rankBadge = rank === 1 ? '🥇 #1 Source' : rank === 2 ? '🥈 #2 Source' : rank === 3 ? '🥉 #3 Source' : `Rank #${rank}`;
+
+    // Comparison bar list (all sources)
+    const barsHTML = allSources.length ? `
+      <div class="dp-section-label">vs All Sources</div>
+      <div class="dp-bar-list">
+        ${allSources.map(s => `
+          <div class="dp-bar-row${s.name === src.name ? ' dp-bar-row-active' : ''}">
+            <div class="dp-bar-name">
+              <span class="legend-swatch" style="background:${segments.find(sg=>sg.src.name===s.name)?.color||'var(--orange)'};width:8px;height:8px;border-radius:2px;display:inline-block;flex-shrink:0;margin-right:4px;"></span>
+              ${s.name}
+            </div>
+            <div class="dp-bar-track">
+              <div class="dp-bar-fill${s.name === src.name ? ' dp-bar-fill-accent' : ''}"
+                   data-w="${Math.round(s.count/max*100)}%" style="width:0%"></div>
+            </div>
+            <div class="dp-bar-num dp-count-up" data-val="${s.count}">0</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    window._dpOpenPreview({
+      eyebrow: 'DONUT BREAKDOWN',
+      title: src.name,
+      subtitle: `${rankBadge} · ${pct}% of total leads`,
+      bodyHTML: `
+        <!-- Hero row: arc + stats -->
+        <div style="display:flex;align-items:center;gap:1.2rem;background:linear-gradient(135deg,rgba(${_hexToRgb(color)},0.10),transparent 60%);border:1px solid rgba(${_hexToRgb(color)},0.2);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1.2rem;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,rgba(${_hexToRgb(color)},0.18),transparent 70%);pointer-events:none;"></div>
+          ${miniArcSVG}
+          <div style="flex:1;min-width:0;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:3.2rem;line-height:1;color:${color};letter-spacing:0.02em;margin-bottom:0.15rem;" class="dp-count-up" data-val="${src.count}">0</div>
+            <div style="font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:0.4rem;">Leads from this source</div>
+            <div style="font-family:'Montserrat',sans-serif;font-size:0.72rem;color:var(--text-muted);">
+              out of <strong style="color:var(--text-primary);">${total.toLocaleString()}</strong> total leads
+            </div>
+          </div>
+        </div>
+        ${cvtHTML}
+        ${barsHTML}
+      `
+    });
+
+    // Animate the arc after modal opens
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const arcEl = document.getElementById(`dpArcCircle${idx}`);
+        if (arcEl) {
+          arcEl.style.strokeDasharray = `${arcDash} ${arcGap}`;
+        }
+      });
+    });
   }
 
   function highlightSegment(idx) {
@@ -212,10 +331,78 @@ function buildDonutChart(sources) {
   }
 }
 
+// ── HEX → RGB helper (used by donut popup gradient) ──────────
+function _hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `${r},${g},${b}`;
+}
+
 // ── SALES BAR CHART ───────────────────────────────────────────
 function buildSalesBar(cvtSources, gridColor, tickColor) {
   const validCvt = cvtSources.filter(s => s.gs > 0).sort((a,b) => b.gs - a.gs);
-  const chart = new Chart(document.getElementById('salesBar'), {
+
+  const canvas = document.getElementById('salesBar');
+  const cardEl = canvas ? canvas.closest('.chart-card') : null;
+
+  // ── Custom HTML legend (replaces built-in so clicks stay separate) ──
+  const oldLegend = cardEl && cardEl.querySelector('.sales-custom-legend');
+  if (oldLegend) oldLegend.remove();
+
+  if (cardEl) {
+    const legendWrap = document.createElement('div');
+    legendWrap.className = 'sales-custom-legend';
+    legendWrap.style.cssText = [
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'gap:1.2rem', 'margin-bottom:0.6rem', 'position:relative', 'z-index:10'
+    ].join(';');
+
+    const datasets = [
+      { label: 'Gross Sales (₱)', color: 'rgba(230,112,38,0.85)', idx: 0 },
+      { label: 'GK Value (₱)',    color: 'rgba(113,112,116,0.6)',  idx: 1 },
+    ];
+
+    datasets.forEach(({ label, color, idx }) => {
+      const btn = document.createElement('button');
+      btn.dataset.dsIdx = idx;
+      btn.style.cssText = [
+        'display:flex', 'align-items:center', 'gap:0.45rem',
+        'background:transparent', 'border:1px solid rgba(113,112,116,0.25)',
+        'border-radius:6px', 'padding:0.3rem 0.75rem', 'cursor:pointer',
+        'transition:border-color 0.2s,opacity 0.2s',
+        'font-family:Montserrat,sans-serif', 'font-size:0.68rem',
+        'font-weight:600', `color:${tickColor}`,
+        'letter-spacing:0.05em', 'white-space:nowrap',
+      ].join(';');
+
+      const swatch = document.createElement('span');
+      swatch.style.cssText = `display:inline-block;width:12px;height:12px;border-radius:3px;background:${color};flex-shrink:0;`;
+      btn.appendChild(swatch);
+      btn.appendChild(document.createTextNode(label));
+      legendWrap.appendChild(btn);
+
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation(); // never reaches the card click handler
+        const ch = btn._salesChart;
+        if (!ch) return;
+        if (ch.isDatasetVisible(idx)) {
+          ch.hide(idx);
+          btn.style.opacity = '0.4';
+          btn.style.borderColor = 'rgba(113,112,116,0.15)';
+        } else {
+          ch.show(idx);
+          btn.style.opacity = '1';
+          btn.style.borderColor = 'rgba(113,112,116,0.25)';
+        }
+      });
+    });
+
+    cardEl.insertBefore(legendWrap, canvas);
+  }
+
+  const chart = new Chart(canvas, {
     type: 'bar',
     data: {
       labels: validCvt.map(s => s.name),
@@ -235,14 +422,11 @@ function buildSalesBar(cvtSources, gridColor, tickColor) {
       ]
     },
     options: {
-      plugins: { legend: { labels: { color: '#a6a6a8' } } },
+      plugins: { legend: { display: false } }, // built-in legend disabled
       scales: {
         x: { ticks: { color: tickColor, font: { size: 9 } }, grid: { color: gridColor } },
         y: {
-          ticks: {
-            color: tickColor,
-            callback: v => '₱' + (v/1000000).toFixed(1) + 'M'
-          },
+          ticks: { color: tickColor, callback: v => '₱' + (v/1000000).toFixed(1) + 'M' },
           grid: { color: gridColor }
         }
       },
@@ -250,15 +434,22 @@ function buildSalesBar(cvtSources, gridColor, tickColor) {
       onClick(evt) {
         const points = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
         if (!points.length) return;
-        const idx = points[0].index;
-        const src = validCvt[idx];
+        const src = validCvt[points[0].index];
         if (src && window._dpOpenPreview && window._dpBuildSalesContext) {
           window._dpOpenPreview(window._dpBuildSalesContext(src));
         }
       }
     }
   });
-  document.getElementById('salesBar').style.cursor = 'pointer';
+
+  // Wire chart reference into each legend button
+  if (cardEl) {
+    cardEl.querySelectorAll('.sales-custom-legend button').forEach(btn => {
+      btn._salesChart = chart;
+    });
+  }
+
+  canvas.style.cursor = 'pointer';
   return chart;
 }
 
@@ -273,9 +464,15 @@ function buildRepBar(reps, gridColor, tickColor) {
 
   // Also set canvas height proportional to number of reps so bars never crush
   const canvas = document.getElementById('repBar');
-  const minBarHeight = 28; // px per bar
+  const isMobile = window.innerWidth <= 768;
+  const minBarHeight = isMobile ? 36 : 28; // px per bar
   const desiredH = Math.max(220, sortedReps.length * minBarHeight + 40);
-  canvas.style.maxHeight = desiredH + 'px';
+  if (isMobile) {
+    canvas.style.height = desiredH + 'px';
+    canvas.style.maxHeight = 'none';
+  } else {
+    canvas.style.maxHeight = desiredH + 'px';
+  }
 
   const chart = new Chart(canvas, {
     type: 'bar',
@@ -305,6 +502,8 @@ function buildRepBar(reps, gridColor, tickColor) {
           ticks: {
             color: tickColor,
             font: { size: 11, family: 'Montserrat' },
+            autoSkip: !isMobile,
+            maxTicksLimit: isMobile ? sortedReps.length : undefined,
             // Never truncate — always show the full name
             callback: function(value, index) {
               return sortedReps[index] ? sortedReps[index].name : value;
@@ -323,16 +522,8 @@ function buildRepBar(reps, gridColor, tickColor) {
         if (!points.length) return;
         const idx  = points[0].index;
         const rep  = sortedReps[idx];
-        if (rep && window._dpOpenPreview) {
-          const allReps = sortedReps;
-          const total   = allReps.reduce((s, r) => s + r.count, 0);
-          const rank    = idx + 1;
-          window._dpOpenPreview(window._dpBuildRepContext
-            ? window._dpBuildRepContext(rep.name, rep.count, rank)
-            : { eyebrow:'SALES REP', title: rep.name,
-                subtitle: `Rank #${rank}`,
-                bodyHTML: `<div class="dp-hero-stat"><div class="dp-hero-val">${rep.count}</div><div class="dp-hero-label">Leads</div></div>` }
-          );
+        if (rep && window._dpOpenPreview && window._dpBuildRepContext) {
+          window._dpOpenPreview(window._dpBuildRepContext(rep.name, rep.count, idx + 1));
         }
       }
     }
@@ -351,9 +542,14 @@ function refreshChartColors(chartsObj, tickColor, gridColor) {
         if (scale.grid) scale.grid.color = gridColor;
       });
     }
-    if (chart.options.plugins && chart.options.plugins.legend) {
+    if (chart.options.plugins && chart.options.plugins.legend &&
+        chart.options.plugins.legend.display !== false) {
       chart.options.plugins.legend.labels = { color: tickColor };
     }
     chart.update();
+  });
+  // Update custom HTML legend button text color on theme toggle
+  document.querySelectorAll('.sales-custom-legend button').forEach(btn => {
+    btn.style.color = tickColor;
   });
 }

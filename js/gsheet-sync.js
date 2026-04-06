@@ -21,7 +21,14 @@ var _syncSecsLeft    = 0;
 var _syncSheetId     = null;
 var _syncLabel       = null;
 var _syncPubUrl      = null;   // The exact URL we fetch each time
-var SYNC_INTERVAL_SEC = 10;
+var SYNC_INTERVAL_SEC = 30;
+var SYNC_SCAN_SEC     = 3;
+var _syncRequestSeq   = 0;
+var _syncInFlight     = false;
+var _syncAppliedHash  = null;
+var _syncHashOrder    = [];
+var _pendingSyncCsv   = null;
+var _pendingSyncHash  = null;
 
 // ─── HOW-TO MODAL ─────────────────────────────────────────────
 function showHowTo() {
@@ -119,6 +126,12 @@ async function connectGoogleSheet() {
     _syncSheetId = parsed.displayId;
     _syncPubUrl  = parsed.pubUrl;
     _syncLabel   = 'Google Sheet (live)';
+    _syncRequestSeq = 0;
+    _syncInFlight = false;
+    _syncAppliedHash = String(csvText);
+    _syncHashOrder = [_syncAppliedHash];
+    _pendingSyncCsv = null;
+    _pendingSyncHash = null;
 
     // Show loading overlay and build dashboard
     var overlay = document.getElementById('loadingOverlay');
@@ -151,72 +164,134 @@ async function connectGoogleSheet() {
  * Returns the CSV text string, or throws.
  */
 async function fetchWithFallbacks(pubUrl) {
-  var errors = [];
+  function fetchTextWithTimeout(url, options, timeoutMs) {
+    return Promise.race([
+      fetch(url, options),
+      new Promise(function(_, reject) {
+        setTimeout(function() { reject(new Error('timeout')); }, timeoutMs);
+      })
+    ]);
+  }
 
   // Append a unique timestamp so every request bypasses all caches
   var bust = '_cb=' + Date.now();
   var bustUrl = pubUrl + (pubUrl.indexOf('?') !== -1 ? '&' : '?') + bust;
 
-  // 1. Direct fetch — works if browser doesn't block CORS
-  try {
-    var r = await fetch(bustUrl, { method: 'GET', cache: 'no-store', redirect: 'follow' });
-    if (r.ok) {
-      var t = await r.text();
-      if (t && !isHtmlPage(t)) return t;
-      if (isHtmlPage(t)) errors.push('direct: HTML page (not published)');
-      else errors.push('direct: empty');
-    } else {
-      errors.push('direct: HTTP ' + r.status);
+  var errors = [];
+  var firstSuccess = null; // { source, text, key }
+  var keyCounts = {};      // key -> { count, sampleText, sources:{} }
+  var publishRequiredSeen = false;
+
+  function recordError(source, err) {
+    var msg = err && err.message ? err.message : String(err);
+    if (msg === 'PUBLISH_REQUIRED') publishRequiredSeen = true;
+    errors.push(source + ': ' + msg);
+  }
+
+  function makeLayer(source, runner) {
+    return runner()
+      .then(function(text) {
+        if (!text) throw new Error('EMPTY_RESPONSE');
+        if (isHtmlPage(text)) throw new Error('PUBLISH_REQUIRED');
+        var key = String(text).trim();
+        var entry = { source: source, text: text, key: key };
+        if (!firstSuccess) firstSuccess = entry;
+        if (!keyCounts[key]) keyCounts[key] = { count: 0, sampleText: text, sources: {} };
+        if (!keyCounts[key].sources[source]) {
+          keyCounts[key].sources[source] = true;
+          keyCounts[key].count += 1;
+        }
+        return entry;
+      })
+      .catch(function(err) {
+        recordError(source, err);
+      });
+  }
+
+  var aoUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(bustUrl);
+  var cpUrl = 'https://corsproxy.io/?' + encodeURIComponent(bustUrl);
+
+  var layers = [
+    makeLayer('direct', function() {
+      return fetchTextWithTimeout(
+        bustUrl,
+        { method: 'GET', cache: 'no-store', redirect: 'follow' },
+        3000
+      ).then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      });
+    }),
+    makeLayer('allorigins', function() {
+      return fetchTextWithTimeout(aoUrl, { cache: 'no-store' }, 4500)
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function(j) { return j.contents || ''; });
+    }),
+    makeLayer('corsproxy', function() {
+      return fetchTextWithTimeout(cpUrl, { cache: 'no-store' }, 4500)
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.text();
+        });
+    })
+  ];
+
+  // Early-consensus: resolve immediately on 2-of-N match; otherwise resolve fast with first success.
+  var EARLY_DEADLINE_MS = 1800;
+  var totalLayers = layers.length;
+  var settled = 0;
+
+  var result = await new Promise(function(resolve, reject) {
+    var done = false;
+    var deadlineTimer = setTimeout(function() {
+      if (done) return;
+      if (firstSuccess) {
+        done = true;
+        resolve(firstSuccess.text);
+      }
+      // If no success yet, keep waiting for either consensus or any success.
+    }, EARLY_DEADLINE_MS);
+
+    function tryResolveConsensus() {
+      for (var k in keyCounts) {
+        if (Object.prototype.hasOwnProperty.call(keyCounts, k) && keyCounts[k].count >= 2) {
+          if (!done) {
+            done = true;
+            clearTimeout(deadlineTimer);
+            resolve(keyCounts[k].sampleText);
+          }
+          return true;
+        }
+      }
+      return false;
     }
-  } catch (e) { errors.push('direct: ' + e.message); }
 
-  // 2. allorigins.win — returns JSON { contents: "..." }
-  // Pass the busted URL so allorigins re-fetches from Google each time
-  try {
-    var aoUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(bustUrl);
-    var r2 = await fetch(aoUrl, { cache: 'no-store' });
-    if (r2.ok) {
-      var j = await r2.json();
-      var t2 = j.contents || '';
-      if (t2 && !isHtmlPage(t2)) return t2;
-      errors.push('allorigins: ' + (isHtmlPage(t2) ? 'HTML (not published)' : 'empty'));
-    } else {
-      errors.push('allorigins: HTTP ' + r2.status);
-    }
-  } catch (e) { errors.push('allorigins: ' + e.message); }
+    layers.forEach(function(p) {
+      Promise.resolve(p).then(function(entry) {
+        // entry is the success object for that layer (or undefined if it errored)
+        if (done) return;
+        if (entry && tryResolveConsensus()) return;
+        // If we have at least one success after the deadline already fired,
+        // allow immediate resolve with firstSuccess to avoid waiting longer.
+        // (Deadline handler will resolve if it can; this is just a safety net.)
+      }).finally(function() {
+        settled += 1;
+        if (done) return;
+        // If everything settled and we still didn't resolve:
+        if (settled === totalLayers) {
+          clearTimeout(deadlineTimer);
+          if (firstSuccess) return resolve(firstSuccess.text);
+          if (publishRequiredSeen) return reject(new Error('PUBLISH_REQUIRED'));
+          return reject(new Error('NETWORK_FAILED:' + errors.join(' | ')));
+        }
+      });
+    });
+  }).catch(function(e) { throw e; });
 
-  // 3. corsproxy.io — plain passthrough
-  try {
-    var cpUrl = 'https://corsproxy.io/?' + encodeURIComponent(bustUrl);
-    var r3 = await fetch(cpUrl, { cache: 'no-store' });
-    if (r3.ok) {
-      var t3 = await r3.text();
-      if (t3 && !isHtmlPage(t3)) return t3;
-      errors.push('corsproxy: ' + (isHtmlPage(t3) ? 'HTML' : 'empty'));
-    } else {
-      errors.push('corsproxy: HTTP ' + r3.status);
-    }
-  } catch (e) { errors.push('corsproxy: ' + e.message); }
-
-  // 4. cors-anywhere fallback
-  try {
-    var haUrl = 'https://cors-anywhere.herokuapp.com/' + bustUrl;
-    var r4 = await fetch(haUrl, { cache: 'no-store' });
-    if (r4.ok) {
-      var t4 = await r4.text();
-      if (t4 && !isHtmlPage(t4)) return t4;
-      errors.push('cors-anywhere: ' + (isHtmlPage(t4) ? 'HTML' : 'empty'));
-    } else {
-      errors.push('cors-anywhere: HTTP ' + r4.status);
-    }
-  } catch (e) { errors.push('cors-anywhere: ' + e.message); }
-
-  // All failed
-  var hasHtml = errors.some(function(e) { return e.indexOf('HTML') !== -1; });
-  console.error('PowerSteel fetch errors:', errors);
-
-  if (hasHtml) throw new Error('PUBLISH_REQUIRED');
-  throw new Error('NETWORK_FAILED:' + errors.join(' | '));
+  return result;
 }
 
 function isHtmlPage(text) {
@@ -232,7 +307,7 @@ function friendlyError(msg) {
     return 'Sheet is not published correctly. In Google Sheets: File \u2192 Share \u2192 Publish to web \u2192 select your tab \u2192 CSV \u2192 click Publish \u2192 copy that link and paste it here.';
   }
   if (msg.indexOf('NETWORK_FAILED') === 0) {
-    return 'Could not fetch the sheet after trying 4 methods. Check your internet connection. Details: ' + msg.replace('NETWORK_FAILED:', '');
+    return 'Could not fetch the sheet after checking multiple sync layers. Check your internet connection and sheet publish settings. Details: ' + msg.replace('NETWORK_FAILED:', '');
   }
   if (msg.indexOf('Failed to fetch') !== -1 || msg.indexOf('NetworkError') !== -1) {
     return 'Network error \u2014 could not reach Google Sheets. Check your internet connection.';
@@ -270,21 +345,21 @@ function startSyncLoop() {
     _syncSecsLeft = Math.max(0, _syncSecsLeft - 1);
     _updateCountdown();
     if (_syncSecsLeft === 0) {
-      // Reset counter immediately so display shows next cycle
+      // Apply only the newest pending snapshot when timer completes.
+      _applyPendingSync();
       _syncSecsLeft = SYNC_INTERVAL_SEC;
+      _updateCountdown();
     }
   }, 1000);
 
-  _syncInterval = setInterval(function() { _doSync(); }, SYNC_INTERVAL_SEC * 1000);
+  // Keep scanning in background continuously; timer only controls apply timing.
+  _syncInterval = setInterval(function() { _scanForSyncUpdate(); }, SYNC_SCAN_SEC * 1000);
+  _scanForSyncUpdate();
 }
 
 function stopSyncLoop() {
   if (_syncInterval)  { clearInterval(_syncInterval);  _syncInterval  = null; }
   if (_syncCountdown) { clearInterval(_syncCountdown); _syncCountdown = null; }
-  var indicator = document.getElementById('syncIndicator');
-  if (indicator) indicator.classList.remove('active');
-  var dot = document.getElementById('syncDot');
-  if (dot) dot.className = 'sync-dot';
 }
 
 function _updateCountdown() {
@@ -292,36 +367,104 @@ function _updateCountdown() {
   if (el) el.textContent = _syncSecsLeft + 's';
 }
 
-async function _doSync() {
-  if (!_syncPubUrl) return;
+async function _scanForSyncUpdate() {
+  if (!_syncPubUrl || _syncInFlight) return;
+  _syncInFlight = true;
+  var reqSeq = ++_syncRequestSeq;
   var dot = document.getElementById('syncDot');
   if (dot) dot.className = 'sync-dot syncing';
   try {
     var csvText = await fetchWithFallbacks(_syncPubUrl);
+    // Ignore if a newer request already started while this one was pending.
+    if (reqSeq !== _syncRequestSeq) return;
     if (!csvText || isHtmlPage(csvText)) throw new Error('Bad response');
-    var rows = Papa.parse(csvText, { skipEmptyLines: false }).data;
-    if (!rows || rows.length < 4) throw new Error('Too few rows');
-    buildDashboard(rows, _syncLabel, null, true, true); // silent=true preserves scroll & tab
+    var csvHash = String(csvText);
+    // Prevent rollbacks: once a newer snapshot is applied, never apply older seen hashes.
+    var seenIdx = _syncHashOrder.indexOf(csvHash);
+    if (seenIdx !== -1 && _syncAppliedHash !== null) {
+      var currentIdx = _syncHashOrder.indexOf(_syncAppliedHash);
+      if (currentIdx !== -1 && seenIdx < currentIdx) {
+        if (dot) dot.className = 'sync-dot';
+        return;
+      }
+    }
+    // Skip if no new snapshot.
+    if (csvHash === _syncAppliedHash) {
+      if (dot) dot.className = 'sync-dot';
+      return;
+    }
+
+    // Keep only the newest pending snapshot; it is applied on timer boundary.
+    _pendingSyncCsv = csvText;
+    _pendingSyncHash = csvHash;
     if (dot) dot.className = 'sync-dot';
-    _syncSecsLeft = SYNC_INTERVAL_SEC;
   } catch (e) {
     console.warn('PowerSteel sync error:', e.message);
+    if (dot) dot.className = 'sync-dot error';
+  } finally {
+    _syncInFlight = false;
+  }
+}
+
+function _applyPendingSync() {
+  if (!_pendingSyncCsv || !_pendingSyncHash) return;
+  var dot = document.getElementById('syncDot');
+  try {
+    var rows = Papa.parse(_pendingSyncCsv, { skipEmptyLines: false }).data;
+    if (!rows || rows.length < 4) throw new Error('Too few rows');
+    buildDashboard(rows, _syncLabel, null, true, true); // silent=true preserves scroll & tab
+    if (_syncHashOrder.indexOf(_pendingSyncHash) === -1) _syncHashOrder.push(_pendingSyncHash);
+    _syncAppliedHash = _pendingSyncHash;
+    _pendingSyncCsv = null;
+    _pendingSyncHash = null;
+    if (dot) dot.className = 'sync-dot';
+  } catch (e) {
+    console.warn('PowerSteel apply error:', e.message);
     if (dot) dot.className = 'sync-dot error';
   }
 }
 
 async function manualSync() {
   if (!_syncPubUrl) return;
+  await _scanForSyncUpdate();
+  _applyPendingSync();
   _syncSecsLeft = SYNC_INTERVAL_SEC;
-  await _doSync();
+  _updateCountdown();
 }
 
 // ─── DISCONNECT ───────────────────────────────────────────────
+// Stops polling + clears live state, but does NOT navigate away.
+function disconnectSyncSoft() {
+  stopSyncLoop();
+  _syncSheetId = null;
+  _syncLabel   = null;
+  _syncPubUrl  = null;
+  _syncRequestSeq = 0;
+  _syncInFlight = false;
+  _syncAppliedHash = null;
+  _syncHashOrder = [];
+  _pendingSyncCsv = null;
+  _pendingSyncHash = null;
+
+  var indicator = document.getElementById('syncIndicator');
+  if (indicator) indicator.classList.remove('active');
+  var dot = document.getElementById('syncDot');
+  if (dot) dot.className = 'sync-dot';
+  _syncSecsLeft = 0;
+  _updateCountdown();
+}
+
 function disconnectSync() {
   stopSyncLoop();
   _syncSheetId = null;
   _syncLabel   = null;
   _syncPubUrl  = null;
+  _syncRequestSeq = 0;
+  _syncInFlight = false;
+  _syncAppliedHash = null;
+  _syncHashOrder = [];
+  _pendingSyncCsv = null;
+  _pendingSyncHash = null;
   var indicator = document.getElementById('syncIndicator');
   if (indicator) indicator.classList.remove('active');
   backToLanding();
@@ -334,6 +477,12 @@ backToLanding = function() {
   _syncSheetId = null;
   _syncPubUrl  = null;
   _syncLabel   = null;
+  _syncRequestSeq = 0;
+  _syncInFlight = false;
+  _syncAppliedHash = null;
+  _syncHashOrder = [];
+  _pendingSyncCsv = null;
+  _pendingSyncHash = null;
   resetConnectBtn();
   var urlInput = document.getElementById('gsheetUrlInput');
   if (urlInput) urlInput.value = '';

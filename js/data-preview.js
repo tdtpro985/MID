@@ -294,56 +294,179 @@
     };
   }
 
-  /* ── Sales / CVT Source ─────────────────────────────────── */
-  function buildSalesContext(cvtSrc) {
+  /* ── Chart Contexts ───────────────────────────────────────── */
+  function buildChartContext(chartKey) {
     const md = window._pvData;
-    const allCvt = md ? [...md.cvtSources].filter(c => c.gs > 0).sort((a,b) => b.gs - a.gs) : [];
-    const rank   = allCvt.findIndex(c => c.name === cvtSrc.name) + 1;
-    const totalGS = allCvt.reduce((s, c) => s + c.gs, 0);
-    const pct     = totalGS ? ((cvtSrc.gs / totalGS) * 100).toFixed(1) : '0.0';
-    const maxGS   = allCvt.length ? allCvt[0].gs : 1;
-
-    function fmtP(v) {
-      if (!v) return '—';
-      if (v >= 1e6) return '₱' + (v/1e6).toFixed(2) + 'M';
-      if (v >= 1e3) return '₱' + (v/1e3).toFixed(1) + 'K';
-      return '₱' + v.toLocaleString();
+    if (!md) {
+      return {
+        eyebrow: 'CHART',
+        title: 'No data',
+        subtitle: '',
+        bodyHTML: `<div style="padding:0.6rem 0;color:var(--text-secondary);">Load a report first.</div>`
+      };
     }
 
+    const sources = md.sources ? [...md.sources] : [];
+    const reps    = md.reps ? [...md.reps] : [];
+    const cvts    = md.cvtSources ? [...md.cvtSources] : [];
+
+    const totalSources = sources.reduce((s, r) => s + (r.count || 0), 0);
+    const totalReps    = reps.reduce((s, r) => s + (r.count || 0), 0);
+
+    function barList(items, getName, getValue, valueLabel, topN) {
+      const list = [...items];
+      list.sort((a, b) => (getValue(b) || 0) - (getValue(a) || 0));
+      const top  = list.slice(0, topN);
+      const maxV = top.length ? Math.max(...top.map(i => getValue(i) || 0)) : 1;
+
+      return `
+        <div class="dp-section-label">Top contributors</div>
+        <div class="dp-bar-list">
+          ${top.map((item, idx) => {
+            const name = getName(item);
+            const val  = getValue(item) || 0;
+            const pct  = totalSources && chartKey !== 'sales' && totalSources > 0
+              ? ((val / totalSources) * 100).toFixed(1)
+              : (totalReps && chartKey === 'reps' && totalReps > 0
+                  ? ((val / totalReps) * 100).toFixed(1)
+                  : null);
+            const activeClass = '';
+            return `
+              <div class="dp-bar-row ${activeClass}">
+                <div class="dp-bar-name">${name}</div>
+                <div class="dp-bar-track">
+                  <div class="dp-bar-fill"
+                       data-w="${Math.round(((val || 0) / (maxV || 1)) * 100)}%"
+                       style="width:0%"></div>
+                </div>
+                <div class="dp-bar-num dp-count-up" data-val="${val}">0</div>
+                <div class="dp-bar-sub" style="color:var(--text-secondary);font-size:0.65rem;">
+                  ${pct !== null ? `${pct}%` : valueLabel}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    if (chartKey === 'sources') {
+      return {
+        eyebrow: 'CHART',
+        title: 'Leads by Source',
+        subtitle: `${sources.length} sources · ${totalSources.toLocaleString()} leads`,
+        bodyHTML: `
+          <div class="dp-hero-stat">
+            <div class="dp-hero-val dp-count-up" data-val="${totalSources}">0</div>
+            <div class="dp-hero-label">Total leads</div>
+            <div class="dp-hero-context">
+              ${sources.length ? `Highest: <strong>${sources.sort((a,b)=>b.count-a.count)[0].name}</strong>` : ''}
+            </div>
+          </div>
+          ${barList(sources, r => r.name, r => r.count, 'Leads', 8)}
+        `
+      };
+    }
+
+    if (chartKey === 'donut') {
+      const sorted = sources.slice().sort((a, b) => b.count - a.count);
+      const top = sorted[0];
+      return {
+        eyebrow: 'CHART',
+        title: 'Source Share',
+        subtitle: `Distribution · ${totalSources.toLocaleString()} leads`,
+        bodyHTML: `
+          <div class="dp-hero-stat">
+            <div class="dp-hero-val">${top ? top.name : '—'}</div>
+            <div class="dp-hero-label">Top source</div>
+            <div class="dp-hero-context">
+              ${top && totalSources ? `<strong>${((top.count / totalSources) * 100).toFixed(1)}%</strong> share` : ''}
+            </div>
+          </div>
+          ${barList(sources, r => r.name, r => r.count, 'Share', 8)}
+        `
+      };
+    }
+
+    if (chartKey === 'sales') {
+      const valid = cvts.filter(s => (s.gs || 0) > 0).sort((a, b) => (b.gs || 0) - (a.gs || 0));
+      const totalGs = valid.reduce((s, r) => s + (r.gs || 0), 0);
+      return {
+        eyebrow: 'CHART',
+        title: 'Converted Sales Value',
+        subtitle: `${valid.length} sources · ${typeof fmtPeso === 'function' ? fmtPeso(totalGs) : totalGs.toLocaleString()} total GS`,
+        bodyHTML: `
+          <div class="dp-hero-stat">
+            <div class="dp-hero-val">${typeof fmtPeso === 'function' ? fmtPeso(totalGs) : totalGs.toLocaleString()}</div>
+            <div class="dp-hero-label">Total Gross Sales</div>
+            <div class="dp-hero-context">Top GS sources (GK shown too)</div>
+          </div>
+          <div class="dp-section-label">Top converted sources</div>
+          <div class="dp-bar-list">
+            ${valid.slice(0, 8).map((s, i) => {
+              const maxV = valid.length ? valid[0].gs || 1 : 1;
+              const w = Math.round(((s.gs || 0) / (maxV || 1)) * 100);
+              return `
+                <div class="dp-bar-row">
+                  <div class="dp-bar-name">${s.name}</div>
+                  <div class="dp-bar-track">
+                    <div class="dp-bar-fill"
+                         data-w="${w}%"
+                         style="width:0%"></div>
+                  </div>
+                  <div class="dp-bar-num dp-count-up" data-val="${Math.round(s.gs || 0)}">0</div>
+                  <div class="dp-bar-sub" style="color:var(--text-secondary);font-size:0.65rem;">
+                    GK: ${typeof fmtPeso === 'function' ? fmtPeso(s.gk || 0) : (s.gk || 0).toLocaleString()}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `
+      };
+    }
+
+    // reps
+    const sortedReps = reps.slice().sort((a, b) => b.count - a.count);
+    const topRep = sortedReps[0];
     return {
-      eyebrow: 'CONVERTED SALES SOURCE',
-      title: cvtSrc.name,
-      subtitle: `Rank #${rank} of ${allCvt.length} converted sources`,
+      eyebrow: 'CHART',
+      title: 'Leads per Sales Representative',
+      subtitle: `${reps.length} reps · ${totalReps.toLocaleString()} leads handled`,
       bodyHTML: `
         <div class="dp-hero-stat">
-          <div class="dp-hero-val">${fmtP(cvtSrc.gs)}</div>
-          <div class="dp-hero-label">Gross Sales</div>
+          <div class="dp-hero-val">${topRep ? topRep.name : '—'}</div>
+          <div class="dp-hero-label">Top rep</div>
           <div class="dp-hero-context">
-            <strong>${pct}%</strong> of total ₱${(totalGS/1e6).toFixed(2)}M converted sales
+            ${topRep && totalReps ? `<strong>${((topRep.count / totalReps) * 100).toFixed(1)}%</strong> share` : ''}
           </div>
         </div>
+        ${barList(sortedReps, r => r.name, r => r.count, 'Leads', 8)}
+      `
+    };
+  }
+
+  function buildConvertedSourceContext(srcName) {
+    const md = window._pvData;
+    if (!md) return buildChartContext('sales');
+    const cvt = (md.cvtSources || []).find(s => s.name === srcName);
+    const gs = cvt ? (cvt.gs || 0) : 0;
+    const gk = cvt ? (cvt.gk || 0) : 0;
+    const fmt = (typeof fmtPeso === 'function') ? fmtPeso : (v => '₱' + (v || 0).toLocaleString());
+    return {
+      eyebrow: 'CONVERTED SOURCE',
+      title: srcName,
+      subtitle: 'Converted Sales Value',
+      bodyHTML: `
         <div class="dp-two-col">
           <div class="dp-stat-box">
-            <div class="dp-stat-box-val">${fmtP(cvtSrc.gs)}</div>
+            <div class="dp-stat-box-val">${fmt(gs)}</div>
             <div class="dp-stat-box-lbl">Gross Sales</div>
           </div>
           <div class="dp-stat-box">
-            <div class="dp-stat-box-val">${fmtP(cvtSrc.gk)}</div>
+            <div class="dp-stat-box-val">${fmt(gk)}</div>
             <div class="dp-stat-box-lbl">GK Value</div>
           </div>
-        </div>
-        <div class="dp-section-label">vs All Converted Sources</div>
-        <div class="dp-bar-list">
-          ${allCvt.map(c => `
-            <div class="dp-bar-row${c.name === cvtSrc.name ? ' dp-bar-row-active' : ''}">
-              <div class="dp-bar-name">${c.name}</div>
-              <div class="dp-bar-track">
-                <div class="dp-bar-fill${c.name === cvtSrc.name ? ' dp-bar-fill-accent' : ''}"
-                     data-w="${Math.round(c.gs/maxGS*100)}%" style="width:0%"></div>
-              </div>
-              <div class="dp-bar-num">${fmtP(c.gs)}</div>
-            </div>
-          `).join('')}
         </div>
       `
     };
@@ -354,15 +477,6 @@
      ═══════════════════════════════════════════════════════ */
 
   function bindClickableCards() {
-
-    /* Tag Chart.js canvases' parent cards */
-    ['sourceBar', 'salesBar', 'repBar'].forEach(id => {
-      const canvas = document.getElementById(id);
-      if (canvas) {
-        const card = canvas.closest('.chart-card');
-        if (card) card.classList.add('dp-clickable-chart');
-      }
-    });
 
     /* KPI cards */
     document.querySelectorAll('.kpi-card').forEach(card => {
@@ -421,6 +535,83 @@
         openPreviewModal(buildRepContext(name, count, rank));
       });
     });
+
+    /* Chart cards (source bar, donut, sales bar, rep bar) */
+    var chartTargets = [];
+    var sourceBarCanvas = document.getElementById('sourceBar');
+    if (sourceBarCanvas) chartTargets.push({ el: sourceBarCanvas.closest('.chart-card'), key: 'sources' });
+
+    var donutCardEl = document.getElementById('donutCard');
+    if (donutCardEl) chartTargets.push({ el: donutCardEl.closest('.chart-card') || donutCardEl, key: 'donut' });
+
+    var salesBarCanvas = document.getElementById('salesBar');
+    if (salesBarCanvas) chartTargets.push({ el: salesBarCanvas.closest('.chart-card'), key: 'sales' });
+
+    var repBarCanvas = document.getElementById('repBar');
+    if (repBarCanvas) chartTargets.push({ el: repBarCanvas.closest('.chart-card'), key: 'reps' });
+
+    chartTargets.forEach(function(t) {
+      if (!t.el) return;
+      if (t.el.dataset.dpChartBound) return;
+      t.el.dataset.dpChartBound = '1';
+      t.el.style.cursor = 'pointer';
+
+      const hint = document.createElement('div');
+      hint.className = 'dp-card-hint';
+      hint.textContent = 'Click for details';
+      t.el.appendChild(hint);
+
+      t.el.addEventListener('click', function() {
+        openPreviewModal(buildChartContext(t.key));
+      });
+    });
+
+    /* Chart data clicks (click a bar -> open that item) */
+    function bindChartDataClick(canvasId, chartKey, onPick) {
+      var canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      if (canvas.dataset.dpChartDataBound) return;
+      canvas.dataset.dpChartDataBound = '1';
+      canvas.style.cursor = 'pointer';
+      canvas.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var ch = (window._charts && window._charts[chartKey]) ? window._charts[chartKey] : null;
+        if (!ch || !ch.getElementsAtEventForMode) {
+          openPreviewModal(buildChartContext(chartKey === 'sourceBar' ? 'sources' : chartKey === 'repBar' ? 'reps' : 'sales'));
+          return;
+        }
+        var els = ch.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+        if (!els || !els.length) {
+          openPreviewModal(buildChartContext(chartKey === 'sourceBar' ? 'sources' : chartKey === 'repBar' ? 'reps' : 'sales'));
+          return;
+        }
+        var idx = els[0].index;
+        onPick(idx);
+      });
+    }
+
+    bindChartDataClick('sourceBar', 'sourceBar', function(idx) {
+      var md = window._pvData;
+      var src = md && md.sources ? md.sources[idx] : null;
+      if (src) openPreviewModal(buildSourceContext(src.name, src.count));
+      else openPreviewModal(buildChartContext('sources'));
+    });
+
+    bindChartDataClick('repBar', 'repBar', function(idx) {
+      var md = window._pvData;
+      var reps = md && md.reps ? [...md.reps].sort((a,b)=>b.count-a.count) : [];
+      var r = reps[idx];
+      if (r) openPreviewModal(buildRepContext(r.name, r.count, idx + 1));
+      else openPreviewModal(buildChartContext('reps'));
+    });
+
+    bindChartDataClick('salesBar', 'salesBar', function(idx) {
+      var md = window._pvData;
+      var valid = md && md.cvtSources ? md.cvtSources.filter(s => (s.gs || 0) > 0).sort((a,b)=>(b.gs||0)-(a.gs||0)) : [];
+      var s = valid[idx];
+      if (s) openPreviewModal(buildConvertedSourceContext(s.name));
+      else openPreviewModal(buildChartContext('sales'));
+    });
   }
 
   /* ── Patch rep table header to show 5th column ─────────── */
@@ -449,11 +640,13 @@
     bindClickableCards();
   });
 
-  /* Expose for external use */
-  window._dpOpenPreview        = openPreviewModal;
-  window._dpClose              = closePreviewModal;
-  window._dpBuildRepContext    = buildRepContext;
+  /* Expose for external use (charts.js, donut drill-down) */
+  window._dpOpenPreview = openPreviewModal;
+  window._dpClose = closePreviewModal;
   window._dpBuildSourceContext = buildSourceContext;
-  window._dpBuildSalesContext  = buildSalesContext;
+  window._dpBuildRepContext = buildRepContext;
+  window._dpBuildSalesContext = function (src) {
+    return buildConvertedSourceContext(src.name);
+  };
 
 })();

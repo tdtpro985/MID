@@ -1,0 +1,153 @@
+/* ═══════════════════════════════════════════════════════════
+   POWERSTEEL – base.css
+   Reset, body, scrollbar, mode toggles
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── BASE RESET ─────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Raleway', sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+/* ─── SCROLLBAR ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--orange-dark); border-radius: 3px; }
+
+/* ─── MODE TOGGLE (floating, landing page) ───────────────── */
+.mode-toggle {
+  position: fixed;
+  top: 1.2rem;
+  right: 1.5rem;
+  z-index: 150;
+  background: var(--upload-bg);
+  border: 1px solid var(--border-orange);
+  border-radius: 50px;
+  padding: 0.4rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(12px);
+}
+
+/* When dashboard is visible, hide the floating toggle — it lives in the header instead */
+#dashboard.visible ~ * .mode-toggle,
+body.dash-active .mode-toggle {
+  display: none;
+}
+
+.mode-toggle:hover {
+  border-color: var(--orange);
+  background: var(--upload-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(230,112,38,0.2);
+}
+
+.mode-toggle .toggle-icon {
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.4s ease;
+}
+
+.mode-toggle:hover .toggle-icon { transform: rotate(20deg); }
+
+.mode-toggle .toggle-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ─── MODE TOGGLE (inline, dashboard header) ─────────────── */
+.mode-toggle-inline {
+  background: transparent;
+  border: 1px solid var(--border-orange);
+  border-radius: 50px;
+  padding: 0.4rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mode-toggle-inline:hover {
+  border-color: var(--orange);
+  box-shadow: 0 4px 14px rgba(230,112,38,0.2);
+}
+
+.mode-toggle-inline .toggle-icon {
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.4s ease;
+}
+
+.mode-toggle-inline:hover .toggle-icon { transform: rotate(20deg); }
+
+.mode-toggle-inline .toggle-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ─── LOADING OVERLAY ────────────────────────────────────── */
+.loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--loading-bg);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2rem;
+  transition: background 0.4s ease;
+}
+
+.loading-overlay.show { display: flex; }
+
+.loading-bars {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  height: 50px;
+}
+
+.loading-bars span {
+  width: 8px;
+  background: var(--orange);
+  border-radius: 4px;
+  animation: loadBar 1.2s ease-in-out infinite;
+}
+
+.loading-bars span:nth-child(1) { animation-delay: 0s; }
+.loading-bars span:nth-child(2) { animation-delay: 0.1s; }
+.loading-bars span:nth-child(3) { animation-delay: 0.2s; }
+.loading-bars span:nth-child(4) { animation-delay: 0.3s; }
+.loading-bars span:nth-child(5) { animation-delay: 0.4s; }
+
+@keyframes loadBar {
+  0%, 100% { height: 15px; opacity: 0.4; }
+  50% { height: 50px; opacity: 1; }
+}
+
+.loading-text {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.3em;
+  color: var(--text-primary);
+}
